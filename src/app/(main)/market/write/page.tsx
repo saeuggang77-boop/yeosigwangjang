@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import Image from "next/image";
@@ -15,6 +15,14 @@ const CATEGORIES = [
 ];
 
 export default function MarketWritePage() {
+  return (
+    <Suspense>
+      <MarketWriteContent />
+    </Suspense>
+  );
+}
+
+function MarketWriteContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const editId = searchParams.get("edit");

@@ -91,9 +91,14 @@ export default function Header() {
                   <div className="absolute right-0 top-full mt-1 w-48 bg-dark-surface border border-dark-border rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
                     <div className="py-1">
                       {session.user.userType === "USER" && (
-                        <Link href="/my" className="block px-4 py-2 text-sm text-gray-300 hover:text-white hover:bg-dark-card">
-                          마이페이지
-                        </Link>
+                        <>
+                          <Link href="/scraps" className="block px-4 py-2 text-sm text-gray-300 hover:text-white hover:bg-dark-card">
+                            스크랩
+                          </Link>
+                          <Link href="/notifications" className="block px-4 py-2 text-sm text-gray-300 hover:text-white hover:bg-dark-card">
+                            알림
+                          </Link>
+                        </>
                       )}
                       {session.user.userType === "BIZ" && (
                         <Link href="/biz" className="block px-4 py-2 text-sm text-gray-300 hover:text-white hover:bg-dark-card">
