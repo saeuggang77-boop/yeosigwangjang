@@ -30,6 +30,7 @@ export default function RootLayout({
     <html lang="ko">
       <head>
         <meta name="rating" content="adult" />
+        <script src="https://js.tosspayments.com/v1/payment" defer />
       </head>
       <body className={`${geistSans.variable} font-sans antialiased`}>
         <SessionProvider>{children}</SessionProvider>

@@ -72,15 +72,16 @@ model BizUser {
 // 광고 업체 회원
 // ==========================================
 model AdUser {
-  id              String   @id @default(cuid())
-  email           String   @unique
+  id              String      @id @default(cuid())
+  email           String      @unique
   password        String
-  bizRegNumber    String   @unique
+  bizRegNumber    String      @unique
   representName   String
   phone           String
-  isApproved      Boolean  @default(false)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  bizCategory     BizCategory @default(ETC)
+  isApproved      Boolean     @default(false)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
 
   businesses Business[]
   payments   Payment[] @relation("AdUserPayments")

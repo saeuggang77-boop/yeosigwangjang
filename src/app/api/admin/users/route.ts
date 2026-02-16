@@ -46,6 +46,7 @@ export async function GET(req: NextRequest) {
             email: true,
             representName: true,
             bizRegNumber: true,
+            bizCategory: true,
             phone: true,
             isApproved: true,
             createdAt: true,

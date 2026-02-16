@@ -2,12 +2,31 @@ import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 
+const VALID_CATEGORIES = [
+  "SURGERY_SKIN",
+  "HAIR_MAKEUP",
+  "FASHION",
+  "NAIL_BEAUTY",
+  "FITNESS",
+  "TAX_LAW",
+  "REALESTATE",
+  "ETC",
+];
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { email, password, bizRegNumber, representName, phone } = body;
+    const { email, password, bizRegNumber, representName, phone, bizCategory } =
+      body;
 
-    if (!email || !password || !bizRegNumber || !representName || !phone) {
+    if (
+      !email ||
+      !password ||
+      !bizRegNumber ||
+      !representName ||
+      !phone ||
+      !bizCategory
+    ) {
       return NextResponse.json(
         { error: "필수 항목을 모두 입력해주세요." },
         { status: 400 }
@@ -17,6 +36,13 @@ export async function POST(req: NextRequest) {
     if (password.length < 8) {
       return NextResponse.json(
         { error: "비밀번호는 8자 이상이어야 합니다." },
+        { status: 400 }
+      );
+    }
+
+    if (!VALID_CATEGORIES.includes(bizCategory)) {
+      return NextResponse.json(
+        { error: "올바른 업종을 선택해주세요." },
         { status: 400 }
       );
     }
@@ -50,6 +76,7 @@ export async function POST(req: NextRequest) {
         bizRegNumber,
         representName,
         phone,
+        bizCategory: bizCategory as never,
       },
     });
 

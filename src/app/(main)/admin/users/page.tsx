@@ -2,6 +2,11 @@
 
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { BIZ_CATEGORIES } from "@/lib/constants";
+
+const BIZ_CAT_LABEL: Record<string, string> = Object.fromEntries(
+  BIZ_CATEGORIES.map((c) => [c.enum, c.label])
+);
 
 interface UserItem {
   id: string;
@@ -13,6 +18,7 @@ interface UserItem {
   // AD 전용
   representName?: string;
   bizRegNumber?: string;
+  bizCategory?: string;
   phone?: string;
   isApproved?: boolean;
   createdAt: string;
@@ -163,6 +169,11 @@ function UsersContent() {
                           </span>
                         )}
                       </div>
+                      {user.bizCategory && (
+                        <p className="text-xs text-gray-400 mt-1">
+                          업종: {BIZ_CAT_LABEL[user.bizCategory] || user.bizCategory}
+                        </p>
+                      )}
                       <p className="text-xs text-gray-500 mt-1">
                         {user.email} &middot; {user.bizRegNumber} &middot;{" "}
                         {user.phone}
