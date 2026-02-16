@@ -3,7 +3,7 @@ import {
   JobCardUrgent,
   JobCardPremium,
   JobCardBasic,
-  JobCardFree,
+  JobCardLight,
 } from "@/components/job/JobCard";
 import type { JobCardData } from "@/components/job/JobCard";
 import MainBanner from "@/components/ad/MainBanner";
@@ -157,7 +157,7 @@ const BASIC_JOBS: JobCardData[] = [
   },
 ];
 
-const FREE_JOBS: JobCardData[] = [
+const LIGHT_JOBS: JobCardData[] = [
   {
     id: "f1",
     title: "대구 동성로 OO바 모집",
@@ -166,7 +166,7 @@ const FREE_JOBS: JobCardData[] = [
     subRegion: "중구",
     bizType: "바",
     salary: "TC 협의",
-    tier: "FREE",
+    tier: "LIGHT",
   },
   {
     id: "f2",
@@ -175,7 +175,7 @@ const FREE_JOBS: JobCardData[] = [
     region: "인천",
     subRegion: "부평",
     bizType: "노래주점",
-    tier: "FREE",
+    tier: "LIGHT",
   },
   {
     id: "f3",
@@ -184,7 +184,7 @@ const FREE_JOBS: JobCardData[] = [
     region: "광주",
     subRegion: "동구",
     bizType: "바",
-    tier: "FREE",
+    tier: "LIGHT",
   },
   {
     id: "f4",
@@ -193,7 +193,7 @@ const FREE_JOBS: JobCardData[] = [
     region: "충남",
     subRegion: "천안",
     bizType: "퍼브",
-    tier: "FREE",
+    tier: "LIGHT",
   },
 ];
 
@@ -235,6 +235,22 @@ export default function HomePage() {
 
       {/* ── 1. 메인 배너 (광고업체 슬라이더) ── */}
       <MainBanner />
+
+      {/* ── 지역별 바로가기 ── */}
+      <section>
+        <h2 className="text-lg font-bold mb-3">지역별 구인</h2>
+        <div className="flex flex-wrap gap-2">
+          {["서울","부산","인천","경기","경남","대구","경북","광주","전남","전북","대전","충남","충북","강원","제주","울산"].map((r) => (
+            <Link
+              key={r}
+              href={`/jobs?region=${encodeURIComponent(r)}`}
+              className="px-4 py-2 rounded-full text-sm font-medium bg-dark-card text-gray-400 hover:text-white hover:bg-primary/20 transition-colors"
+            >
+              {r}
+            </Link>
+          ))}
+        </div>
+      </section>
 
       {/* ── 2. 긴급 구인 ── */}
       <section>
@@ -281,10 +297,10 @@ export default function HomePage() {
           ))}
         </div>
 
-        {/* 무료 카드 */}
+        {/* 라이트 카드 */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          {FREE_JOBS.map((job) => (
-            <JobCardFree key={job.id} job={job} />
+          {LIGHT_JOBS.map((job) => (
+            <JobCardLight key={job.id} job={job} />
           ))}
         </div>
       </section>

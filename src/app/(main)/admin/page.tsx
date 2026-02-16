@@ -7,6 +7,7 @@ interface AdminStats {
   pendingUsers: number;
   pendingAdUsers: number;
   pendingReports: number;
+  pendingPayments: number;
   activeJobs: number;
   totalUsers: number;
   totalCafePosts: number;
@@ -20,7 +21,7 @@ export default function AdminDashboardPage() {
     async function fetchStats() {
       try {
         // 병렬 fetch
-        const [usersRes, adUsersRes, reportsRes, jobsRes, cafeRes] =
+        const [usersRes, adUsersRes, reportsRes, jobsRes, cafeRes, paymentsRes] =
           await Promise.all([
             fetch("/api/admin/users?type=user&filter=pending").then((r) =>
               r.json()
@@ -31,12 +32,14 @@ export default function AdminDashboardPage() {
             fetch("/api/admin/reports?status=PENDING").then((r) => r.json()),
             fetch("/api/admin/jobs?status=active").then((r) => r.json()),
             fetch("/api/admin/cafe-posts").then((r) => r.json()),
+            fetch("/api/admin/payments?status=PENDING").then((r) => r.json()),
           ]);
 
         setStats({
           pendingUsers: usersRes.pagination?.total || 0,
           pendingAdUsers: adUsersRes.pagination?.total || 0,
           pendingReports: reportsRes.pagination?.total || 0,
+          pendingPayments: paymentsRes.pagination?.total || 0,
           activeJobs: jobsRes.pagination?.total || 0,
           totalUsers: usersRes.pagination?.total || 0,
           totalCafePosts: cafeRes.pagination?.total || 0,
@@ -59,7 +62,7 @@ export default function AdminDashboardPage() {
       <h1 className="text-2xl font-bold">관리자 대시보드</h1>
 
       {/* 긴급 처리 필요 */}
-      {stats && (stats.pendingReports > 0 || stats.pendingAdUsers > 0) && (
+      {stats && (stats.pendingReports > 0 || stats.pendingAdUsers > 0 || stats.pendingPayments > 0) && (
         <div className="card border-urgent/30 bg-urgent/5">
           <h2 className="font-bold text-sm text-urgent mb-3">
             처리 대기중
@@ -89,6 +92,19 @@ export default function AdminDashboardPage() {
                 </span>
               </Link>
             )}
+            {stats.pendingPayments > 0 && (
+              <Link
+                href="/admin/payments"
+                className="flex items-center justify-between p-3 rounded-lg bg-dark-bg hover:bg-dark-card transition-colors"
+              >
+                <span className="text-sm text-gray-300">
+                  입금 확인 대기
+                </span>
+                <span className="text-sm font-bold text-secondary">
+                  {stats.pendingPayments}건
+                </span>
+              </Link>
+            )}
           </div>
         </div>
       )}
@@ -115,6 +131,14 @@ export default function AdminDashboardPage() {
           <p className="text-xs text-gray-500 mb-1">미처리 신고</p>
           <p className="text-2xl font-bold text-urgent">
             {stats?.pendingReports || 0}
+            <span className="text-sm text-gray-400 ml-1">건</span>
+          </p>
+        </Link>
+
+        <Link href="/admin/payments" className="card hover:border-primary/50 transition-colors">
+          <p className="text-xs text-gray-500 mb-1">입금 확인 대기</p>
+          <p className="text-2xl font-bold text-secondary">
+            {stats?.pendingPayments || 0}
             <span className="text-sm text-gray-400 ml-1">건</span>
           </p>
         </Link>

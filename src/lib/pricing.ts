@@ -4,14 +4,24 @@ import type { BizCategory } from "@prisma/client";
 // 구인글 가격 (VAT 포함)
 // ==========================================
 export const JOB_PRICES = {
-  FREE: 0,
-  BASIC: 100_000,
-  PREMIUM: 200_000,
-  URGENT: 30_000, // 추가옵션, 7일
-  BUMP: 10_000, // 수동 끌올, 1회
-  PKG_BASIC: 130_000, // 기본 + 열람권
-  PKG_PREMIUM: 250_000, // 프리미엄 + 열람권 + 긴급 1회
+  LIGHT: 30_000,
+  BASIC: 80_000,
+  PREMIUM: 150_000,
+  URGENT: 20_000, // 추가옵션, 7일
+  BUMP: 8_000, // 수동 끌올, 1회
+  PKG_BASIC: 110_000, // 기본 + 열람권
+  PKG_PREMIUM: 200_000, // 프리미엄 + 열람권 + 긴급 1회
 } as const;
+
+// ==========================================
+// 끌올 패키지 (VAT 포함)
+// ==========================================
+export const BUMP_PKG_PRICES = {
+  5: 35_000, // 정가 40,000 (12% 할인)
+  10: 60_000, // 정가 80,000 (25% 할인)
+} as const;
+
+export type BumpPkgQuantity = keyof typeof BUMP_PKG_PRICES;
 
 // ==========================================
 // 구직글 열람권 (VAT 포함)
@@ -75,6 +85,6 @@ export function formatPrice(price: number): string {
 }
 
 export function formatPriceWithUnit(price: number): string {
-  if (price === 0) return "무료";
+  if (price === 0) return "₩0";
   return `₩${formatPrice(price)}`;
 }

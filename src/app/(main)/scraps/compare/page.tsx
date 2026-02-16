@@ -58,7 +58,7 @@ function formatCell(job: CompareJob, key: string): React.ReactNode {
         return <span className="text-premium-gold font-medium">프리미엄</span>;
       if (job.tier === "BASIC")
         return <span className="text-secondary font-medium">기본</span>;
-      return <span className="text-gray-500">무료</span>;
+      return <span className="text-gray-500">라이트</span>;
     case "isUrgent":
       return job.isUrgent ? (
         <span className="text-urgent font-medium">긴급</span>

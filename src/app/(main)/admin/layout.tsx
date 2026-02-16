@@ -8,6 +8,7 @@ import { useEffect } from "react";
 
 const NAV_ITEMS = [
   { href: "/admin", label: "대시보드" },
+  { href: "/admin/payments", label: "입금 확인" },
   { href: "/admin/users", label: "회원 관리" },
   { href: "/admin/jobs", label: "구인글 관리" },
   { href: "/admin/reports", label: "신고 관리" },

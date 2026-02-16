@@ -4,12 +4,12 @@ import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { REGIONS, SUB_REGIONS, BIZ_TYPES, BENEFIT_OPTIONS, CONTACT_TYPES } from "@/lib/constants";
+import { REGIONS, SUB_REGIONS, BIZ_TYPES, BENEFIT_OPTIONS, CONTACT_TYPES, BANK_ACCOUNT } from "@/lib/constants";
 import { filterJobForm } from "@/lib/filter";
 import { JOB_PRICES, formatPriceWithUnit } from "@/lib/pricing";
 import { getGuideForBizType, compareSalary } from "@/lib/salary-guide";
 
-type TierKey = "FREE" | "BASIC" | "PREMIUM" | "PKG_BASIC" | "PKG_PREMIUM";
+type TierKey = "LIGHT" | "BASIC" | "PREMIUM" | "PKG_BASIC" | "PKG_PREMIUM";
 
 const TIER_OPTIONS: {
   key: TierKey;
@@ -21,10 +21,10 @@ const TIER_OPTIONS: {
   bizOnly?: boolean;
 }[] = [
   {
-    key: "FREE",
-    label: "무료",
-    price: JOB_PRICES.FREE,
-    desc: "최하단 · 사진불가",
+    key: "LIGHT",
+    label: "라이트",
+    price: JOB_PRICES.LIGHT,
+    desc: "최하단 · 텍스트만 · 사진불가",
     borderClass: "border-primary bg-primary/10",
   },
   {
@@ -62,10 +62,11 @@ const TIER_OPTIONS: {
 ];
 
 // 유료 결제 필요한 tier
-const PAID_TIERS = new Set<TierKey>(["BASIC", "PREMIUM", "PKG_BASIC", "PKG_PREMIUM"]);
+const PAID_TIERS = new Set<TierKey>(["LIGHT", "BASIC", "PREMIUM", "PKG_BASIC", "PKG_PREMIUM"]);
 
 // checkout에 전달할 packageType 매핑
 const CHECKOUT_TYPE: Record<string, string> = {
+  LIGHT: "LIGHT",
   BASIC: "BASIC",
   PREMIUM: "PREMIUM",
   PKG_BASIC: "PKG_BASIC",
@@ -74,9 +75,9 @@ const CHECKOUT_TYPE: Record<string, string> = {
 
 function getSubmitPrice(tier: TierKey, isUrgent: boolean): number {
   const base = TIER_OPTIONS.find((t) => t.key === tier)?.price ?? 0;
-  // 긴급 추가: 단품만 (패키지 PREMIUM은 이미 포함)
+  // 긴급 추가: 단품만 (패키지 PREMIUM은 이미 포함, LIGHT 제외)
   const urgentExtra =
-    isUrgent && tier !== "FREE" && tier !== "PKG_PREMIUM"
+    isUrgent && tier !== "LIGHT" && tier !== "PKG_PREMIUM"
       ? JOB_PRICES.URGENT
       : 0;
   return base + urgentExtra;
@@ -104,13 +105,16 @@ export default function JobWritePage() {
     description: "",
     contact: "",
     contactType: "KAKAO",
-    tier: "FREE" as TierKey,
+    tier: "LIGHT" as TierKey,
     isUrgent: false,
     agreeNoFraud: false,
     agreeNoDiscrimination: false,
     // 비회원용
     guestEmail: "",
     guestPhone: "",
+    // 결제 수단
+    paymentMethod: "TOSS" as "TOSS" | "BANK_TRANSFER",
+    depositorName: "",
   });
 
   const updateField = (field: string, value: unknown) => {
@@ -169,6 +173,8 @@ export default function JobWritePage() {
         packageType: CHECKOUT_TYPE[form.tier],
         jobData,
         isUrgent: form.isUrgent,
+        paymentMethod: form.paymentMethod,
+        depositorName: form.depositorName,
       }),
     });
 
@@ -178,16 +184,18 @@ export default function JobWritePage() {
       return;
     }
 
-    // 2. 토스 결제 SDK (현재 테스트 모드 — 바로 confirm 호출)
-    // TODO: 실제 토스 SDK 연동 시 여기서 TossPayments.requestPayment() 호출
+    // 2. 무통장 입금이면 토스 SDK 건너뛰고 바로 confirm
+    const isBankTransfer = checkoutData.paymentMethod === "BANK_TRANSFER";
+
     const confirmRes = await fetch("/api/biz/package/confirm", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        paymentKey: `test_${Date.now()}`,
+        paymentKey: isBankTransfer ? null : `test_${Date.now()}`,
         orderId: checkoutData.orderId,
         amount: checkoutData.amount,
         jobData,
+        paymentMethod: isBankTransfer ? "BANK_TRANSFER" : "TOSS",
       }),
     });
 
@@ -197,7 +205,19 @@ export default function JobWritePage() {
       return;
     }
 
-    // 3. 성공 → 구인글 상세로 이동
+    // 3. 성공
+    if (isBankTransfer) {
+      alert(
+        "무통장 입금 신청이 완료되었습니다.\n\n" +
+        `입금 계좌: ${BANK_ACCOUNT.bankName} ${BANK_ACCOUNT.accountNumber}\n` +
+        `예금주: ${BANK_ACCOUNT.accountHolder}\n` +
+        `금액: ${checkoutData.amount.toLocaleString()}원\n\n` +
+        "입금 확인 후 구인글이 활성화됩니다."
+      );
+      router.push("/biz/jobs");
+      return;
+    }
+
     const extras: string[] = [];
     if (confirmData.seekAccessGranted) extras.push("구직글 열람권 1개월");
     if (confirmData.isUrgent) extras.push("긴급 구인 7일");
@@ -209,26 +229,7 @@ export default function JobWritePage() {
     router.push(`/jobs/${confirmData.jobId}`);
   };
 
-  // 무료 등록 플로우 (기존)
-  const handleFreeSubmit = async () => {
-    const res = await fetch("/api/jobs", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        type: "HIRE",
-        ...form,
-        tier: "FREE",
-      }),
-    });
-
-    const data = await res.json();
-    if (!res.ok) {
-      setError(data.error);
-      return;
-    }
-
-    router.push(`/jobs/${data.id}`);
-  };
+  // NOTE: 라이트도 유료 결제 플로우 사용 (모든 등급 유료)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -236,6 +237,11 @@ export default function JobWritePage() {
 
     if (!form.agreeNoFraud || !form.agreeNoDiscrimination) {
       setError("필수 동의 항목을 체크해주세요.");
+      return;
+    }
+
+    if (form.paymentMethod === "BANK_TRANSFER" && !form.depositorName.trim()) {
+      setError("무통장 입금 시 입금자명을 입력해주세요.");
       return;
     }
 
@@ -259,11 +265,7 @@ export default function JobWritePage() {
     setIsLoading(true);
 
     try {
-      if (PAID_TIERS.has(form.tier)) {
-        await handlePaidSubmit();
-      } else {
-        await handleFreeSubmit();
-      }
+      await handlePaidSubmit();
     } catch {
       setError("등록 중 오류가 발생했습니다.");
     } finally {
@@ -276,7 +278,7 @@ export default function JobWritePage() {
   // 현재 선택 tier 계산된 가격
   const totalPrice = getSubmitPrice(form.tier, form.isUrgent);
 
-  // 긴급 옵션 표시 조건: 유료 단품(BASIC/PREMIUM)만 (패키지 PREMIUM은 이미 포함)
+  // 긴급 옵션 표시 조건: 유료 단품(BASIC/PREMIUM)만 (패키지 PREMIUM은 이미 포함, LIGHT 제외)
   const showUrgentOption =
     form.tier === "BASIC" || form.tier === "PREMIUM" || form.tier === "PKG_BASIC";
 
@@ -291,7 +293,7 @@ export default function JobWritePage() {
       <p className="text-sm text-gray-400 mb-6">
         {session
           ? `${session.user.bizName || session.user.nickname || session.user.email}님의 구인글`
-          : "비회원도 등록 가능합니다. 이메일을 입력해주세요."}
+          : "구인글 등록은 업소 회원만 이용할 수 있습니다."}
       </p>
 
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -602,7 +604,7 @@ export default function JobWritePage() {
                   type="button"
                   onClick={() => {
                     updateField("tier", t.key);
-                    if (t.key === "FREE") updateField("isUrgent", false);
+                    if (t.key === "LIGHT") updateField("isUrgent", false);
                   }}
                   className={`p-4 rounded-xl border text-center transition-all ${
                     form.tier === t.key
@@ -693,6 +695,68 @@ export default function JobWritePage() {
           )}
         </div>
 
+        {/* ─── 결제 수단 선택 ─── */}
+        {isBiz && (
+          <div className="card space-y-4">
+            <h2 className="font-bold text-sm text-gray-300">결제 수단</h2>
+
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => updateField("paymentMethod", "TOSS")}
+                className={`p-4 rounded-xl border text-center transition-all ${
+                  form.paymentMethod === "TOSS"
+                    ? "border-primary bg-primary/10"
+                    : "border-dark-border hover:border-gray-500"
+                }`}
+              >
+                <p className="font-bold text-sm">카드/간편결제</p>
+                <p className="text-xs text-gray-500 mt-1">토스페이먼츠</p>
+              </button>
+              <button
+                type="button"
+                onClick={() => updateField("paymentMethod", "BANK_TRANSFER")}
+                className={`p-4 rounded-xl border text-center transition-all ${
+                  form.paymentMethod === "BANK_TRANSFER"
+                    ? "border-secondary bg-secondary/10"
+                    : "border-dark-border hover:border-gray-500"
+                }`}
+              >
+                <p className="font-bold text-sm">무통장 입금</p>
+                <p className="text-xs text-gray-500 mt-1">계좌이체</p>
+              </button>
+            </div>
+
+            {form.paymentMethod === "BANK_TRANSFER" && (
+              <div className="space-y-3">
+                <div className="bg-dark-bg rounded-lg p-4 space-y-2">
+                  <p className="text-sm font-medium text-gray-300">입금 계좌 정보</p>
+                  <div className="text-sm text-gray-400 space-y-1">
+                    <p>은행: <span className="text-white font-medium">{BANK_ACCOUNT.bankName}</span></p>
+                    <p>계좌: <span className="text-white font-medium">{BANK_ACCOUNT.accountNumber}</span></p>
+                    <p>예금주: <span className="text-white font-medium">{BANK_ACCOUNT.accountHolder}</span></p>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">
+                    입금자명 <span className="text-urgent">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={form.depositorName}
+                    onChange={(e) => updateField("depositorName", e.target.value)}
+                    className="input-field"
+                    placeholder="실제 입금자명을 입력하세요"
+                  />
+                </div>
+                <p className="text-xs text-gray-500">
+                  입금 확인까지 영업일 기준 1~2시간이 소요됩니다. 입금 확인 후 구인글이 활성화됩니다.
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* ─── 법적 동의 (v6) ─── */}
         <div className="card space-y-3">
           <h2 className="font-bold text-sm text-gray-300">필수 동의</h2>
@@ -744,8 +808,8 @@ export default function JobWritePage() {
           >
             {isLoading
               ? "처리 중..."
-              : form.tier === "FREE"
-                ? "무료로 등록"
+              : form.paymentMethod === "BANK_TRANSFER"
+                ? `${formatPriceWithUnit(totalPrice)} 무통장 입금 신청`
                 : `${formatPriceWithUnit(totalPrice)} 결제하고 등록`}
           </button>
         </div>

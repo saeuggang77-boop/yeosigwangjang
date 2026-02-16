@@ -33,6 +33,7 @@ model User {
   reports       Report[]       @relation("Reporter")
   notifications Notification[]
   jobSeeks      Job[]          @relation("JobAuthor")
+  marketItems   MarketItem[]
 }
 
 enum UserRole {
@@ -58,6 +59,7 @@ model BizUser {
   phone           String
   hasSeekAccess   Boolean   @default(false)
   seekAccessUntil DateTime?
+  bumpCredits     Int       @default(0)
   isVerifiedBiz   Boolean   @default(false)
   isRecommended   Boolean   @default(false)
   bizRegNumber    String?
@@ -93,7 +95,7 @@ model AdUser {
 model Job {
   id               String      @id @default(cuid())
   type             JobType
-  tier             JobTier     @default(FREE)
+  tier             JobTier     @default(LIGHT)
   title            String
   bizName          String?
   region           String
@@ -148,7 +150,7 @@ enum JobType {
 }
 
 enum JobTier {
-  FREE
+  LIGHT
   BASIC
   PREMIUM
 }
@@ -354,6 +356,10 @@ model Payment {
   tossOrderId    String?       @unique
   tossPaymentKey String?
   description    String?
+  paymentMethod  String?       @default("TOSS") // "TOSS" | "BANK_TRANSFER"
+  depositorName  String?       // 무통장 입금자명
+  adminNote      String?       // 관리자 메모
+  verifiedAt     DateTime?     // 관리자 입금 확인 시각
   createdAt      DateTime      @default(now())
 
   bizUserId  String?
@@ -371,6 +377,7 @@ enum PaymentType {
   JOB_PREMIUM
   JOB_URGENT
   JOB_BUMP
+  JOB_BUMP_PKG
   JOB_PKG_BASIC
   JOB_PKG_PREMIUM
   SEEK_ACCESS
@@ -436,6 +443,39 @@ model CafePost {
   isPinned  Boolean  @default(false)
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
+}
+
+// ==========================================
+// 중고장터
+// ==========================================
+enum MarketCategory {
+  CLOTHING   // 의상
+  BAG        // 가방
+  SHOES      // 신발
+  ACCESSORY  // 소품
+  ETC        // 기타
+}
+
+model MarketItem {
+  id          String         @id @default(cuid())
+  title       String
+  description String         @db.Text
+  price       Int
+  category    MarketCategory
+  images      String[]
+  isSoldOut   Boolean        @default(false)
+  viewCount   Int            @default(0)
+  isActive    Boolean        @default(true)
+
+  authorId String
+  author   User @relation(fields: [authorId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([category, isActive])
+  @@index([authorId])
+  @@index([createdAt])
 }
 
 // ==========================================

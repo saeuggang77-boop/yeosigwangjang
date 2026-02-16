@@ -49,7 +49,7 @@ export default async function JobDetailPage({ params }: Props) {
       ? "PREMIUM"
       : job.tier === "BASIC"
         ? "BASIC"
-        : "FREE";
+        : "LIGHT";
 
   // 스크랩 상태 조회
   let isBookmarked = false;

@@ -43,7 +43,7 @@ interface DashboardData {
     urgentJobs: number;
     premiumJobs: number;
     basicJobs: number;
-    freeJobs: number;
+    lightJobs: number;
     totalViews: number;
     totalContactClicks: number;
     totalScraps: number;
@@ -54,6 +54,7 @@ interface DashboardData {
   topJobs: TopJob[];
   ranking: Ranking | null;
   upgradeSuggestions: string[];
+  bumpCredits: number;
   seekAccess: {
     hasAccess: boolean;
     expiresAt: string | null;
@@ -84,7 +85,7 @@ export default function BizDashboardPage() {
     );
   }
 
-  const { profile, stats, dailyStats, topJobs, ranking, upgradeSuggestions, seekAccess } = data;
+  const { profile, stats, dailyStats, topJobs, ranking, upgradeSuggestions, bumpCredits, seekAccess } = data;
 
   return (
     <div className="space-y-6">
@@ -122,9 +123,9 @@ export default function BizDashboardPage() {
       {/* ─── 업그레이드 배너 ─── */}
       {upgradeSuggestions.length > 0 && (
         <div className="space-y-3">
-          {upgradeSuggestions.includes("FREE_TO_BASIC") && (
+          {upgradeSuggestions.includes("LIGHT_TO_BASIC") && (
             <UpgradeBanner
-              title="무료 구인글을 기본으로 업그레이드하세요"
+              title="라이트 구인글을 기본으로 업그레이드하세요"
               desc="기본 구인글은 사진 3장 + 일반 노출로 조회수가 평균 3배 높습니다."
               cta="기본 구인글 등록"
               href="/jobs/write"
@@ -248,7 +249,7 @@ export default function BizDashboardPage() {
           <div className="space-y-2">
             <TierBar label="프리미엄" count={stats.premiumJobs} total={stats.activeJobs} color="bg-premium-gold" />
             <TierBar label="기본" count={stats.basicJobs} total={stats.activeJobs} color="bg-primary" />
-            <TierBar label="무료" count={stats.freeJobs} total={stats.activeJobs} color="bg-gray-600" />
+            <TierBar label="라이트" count={stats.lightJobs} total={stats.activeJobs} color="bg-gray-600" />
             {stats.urgentJobs > 0 && (
               <TierBar label="긴급" count={stats.urgentJobs} total={stats.activeJobs} color="bg-urgent" />
             )}
@@ -310,8 +311,23 @@ export default function BizDashboardPage() {
         </div>
       )}
 
-      {/* ─── 하단: 열람권 + 결제 ─── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      {/* ─── 하단: 끌올 크레딧 + 열람권 + 결제 ─── */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="card">
+          <h2 className="font-bold text-sm text-gray-300 mb-3">끌올 크레딧</h2>
+          <p className="text-2xl font-bold text-primary mb-1">
+            {bumpCredits}<span className="text-sm text-gray-400 ml-1">회</span>
+          </p>
+          <p className="text-xs text-gray-500 mb-3">
+            {bumpCredits > 0
+              ? "끌올 시 크레딧이 자동 차감됩니다."
+              : "패키지 구매로 할인된 가격에 끌올하세요."}
+          </p>
+          <Link href="/biz/jobs" className="btn-outline text-xs py-2 px-3 inline-block">
+            {bumpCredits > 0 ? "끌올하기" : "패키지 구매"}
+          </Link>
+        </div>
+
         <div className="card">
           <h2 className="font-bold text-sm text-gray-300 mb-3">구직글 열람권</h2>
           {seekAccess.hasAccess ? (

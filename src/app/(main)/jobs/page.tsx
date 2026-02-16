@@ -8,7 +8,7 @@ import {
   JobCardUrgent,
   JobCardPremium,
   JobCardBasic,
-  JobCardFree,
+  JobCardLight,
 } from "@/components/job/JobCard";
 import type { JobCardData } from "@/components/job/JobCard";
 import SeekCard from "@/components/job/SeekCard";
@@ -118,7 +118,7 @@ function JobsContent() {
     bizType: j.bizType,
     salary: j.salary || undefined,
     workHours: j.workHours || undefined,
-    tier: j.tier as "FREE" | "BASIC" | "PREMIUM",
+    tier: j.tier as "LIGHT" | "BASIC" | "PREMIUM",
     isUrgent: j.isUrgent,
     images: j.images,
     isVerifiedBiz: j.bizUser?.isVerifiedBiz,
@@ -129,7 +129,7 @@ function JobsContent() {
   const urgentJobs = jobs.filter((j) => j.isUrgent);
   const premiumJobs = jobs.filter((j) => !j.isUrgent && j.tier === "PREMIUM");
   const basicJobs = jobs.filter((j) => !j.isUrgent && j.tier === "BASIC");
-  const freeJobs = jobs.filter((j) => !j.isUrgent && j.tier === "FREE");
+  const lightJobs = jobs.filter((j) => !j.isUrgent && j.tier === "LIGHT");
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
@@ -181,6 +181,23 @@ function JobsContent() {
         >
           구직
         </button>
+      </div>
+
+      {/* 지역 바로가기 */}
+      <div className="flex flex-wrap gap-2 mb-4">
+        {["서울","부산","인천","경기","경남","대구","경북","광주","전남","전북","대전","충남","충북","강원","제주","울산"].map((r) => (
+          <button
+            key={r}
+            onClick={() => updateParam("region", region === r ? "" : r)}
+            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+              region === r
+                ? "bg-primary text-white"
+                : "bg-dark-card text-gray-500 hover:text-gray-300"
+            }`}
+          >
+            {r}
+          </button>
+        ))}
       </div>
 
       {/* 필터 */}
@@ -291,12 +308,12 @@ function JobsContent() {
             </section>
           )}
 
-          {freeJobs.length > 0 && (
+          {lightJobs.length > 0 && (
             <section>
-              <h2 className="text-lg font-bold mb-4 text-gray-500">무료 구인</h2>
+              <h2 className="text-lg font-bold mb-4 text-gray-500">라이트 구인</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                {freeJobs.map((j) => (
-                  <JobCardFree key={j.id} job={toCardData(j)} />
+                {lightJobs.map((j) => (
+                  <JobCardLight key={j.id} job={toCardData(j)} />
                 ))}
               </div>
             </section>

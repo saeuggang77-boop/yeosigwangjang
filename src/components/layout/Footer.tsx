@@ -6,6 +6,7 @@ const FOOTER_LINKS = [
   { href: "/terms", label: "이용약관" },
   { href: "/privacy", label: "개인정보처리방침" },
   { href: "/refund-policy", label: "환불정책" },
+  { href: "/faq", label: "자주 묻는 질문" },
 ];
 
 const CAFE_URL = "https://cafe.naver.com/bamyeosi";

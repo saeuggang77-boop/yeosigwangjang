@@ -131,7 +131,7 @@ export async function POST(req: NextRequest) {
       contact,
       contactType,
       images,
-      tier, // FREE | BASIC | PREMIUM
+      tier, // LIGHT | BASIC | PREMIUM
       isUrgent,
       // 구직글 전용
       desiredRegions,
@@ -234,14 +234,14 @@ export async function POST(req: NextRequest) {
     const now = new Date();
     const expiresAt = type === "HIRE" ? new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000) : null;
     const urgentUntil =
-      isUrgent && tier !== "FREE"
+      isUrgent && tier !== "LIGHT"
         ? new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
         : null;
 
     const job = await prisma.job.create({
       data: {
         type: type || "HIRE",
-        tier: tier || "FREE",
+        tier: tier || "LIGHT",
         title,
         bizName: bizName || null,
         region,
@@ -255,7 +255,7 @@ export async function POST(req: NextRequest) {
         contact,
         contactType: contactType || "KAKAO",
         images: images || [],
-        isUrgent: isUrgent && tier !== "FREE",
+        isUrgent: isUrgent && tier !== "LIGHT",
         urgentUntil,
         expiresAt,
         authorUserId,

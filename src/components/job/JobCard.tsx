@@ -11,7 +11,7 @@ export interface JobCardData {
   bizType: string;
   salary?: string;
   workHours?: string;
-  tier: "FREE" | "BASIC" | "PREMIUM";
+  tier: "LIGHT" | "BASIC" | "PREMIUM";
   isUrgent?: boolean;
   images?: string[];
   lastBumpedAt?: string | null;
@@ -152,11 +152,11 @@ export function JobCardBasic({ job }: { job: JobCardData }) {
   );
 }
 
-// ─── 무료 구인 카드 ───
-export function JobCardFree({ job }: { job: JobCardData }) {
+// ─── 라이트 구인 카드 ───
+export function JobCardLight({ job }: { job: JobCardData }) {
   return (
     <Link href={`/jobs/${job.id}`} className="block">
-      <div className="card-free group hover:opacity-80 transition-all">
+      <div className="card-light group hover:opacity-80 transition-all">
         <h3 className="font-medium text-sm text-gray-300 mb-1 group-hover:text-white transition-colors">
           {job.title}
         </h3>
@@ -177,5 +177,5 @@ export default function JobCard({ job }: { job: JobCardData }) {
   if (job.isUrgent) return <JobCardUrgent job={job} />;
   if (job.tier === "PREMIUM") return <JobCardPremium job={job} />;
   if (job.tier === "BASIC") return <JobCardBasic job={job} />;
-  return <JobCardFree job={job} />;
+  return <JobCardLight job={job} />;
 }

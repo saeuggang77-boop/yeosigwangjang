@@ -11,6 +11,7 @@ import {
   formatPriceWithUnit,
 } from "@/lib/pricing";
 import type { PrepayMonths } from "@/lib/pricing";
+import { BANK_ACCOUNT } from "@/lib/constants";
 
 export default function SeekAccessPage() {
   const { data: session } = useSession();
@@ -18,6 +19,8 @@ export default function SeekAccessPage() {
   const [months, setMonths] = useState<PrepayMonths>(1);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState<"TOSS" | "BANK_TRANSFER">("TOSS");
+  const [depositorName, setDepositorName] = useState("");
   const [accessInfo, setAccessInfo] = useState<{
     hasAccess: boolean;
     expiresAt?: string;
@@ -36,19 +39,41 @@ export default function SeekAccessPage() {
 
   const handlePurchase = async () => {
     setError("");
+
+    if (paymentMethod === "BANK_TRANSFER" && !depositorName.trim()) {
+      setError("입금자명을 입력해주세요.");
+      return;
+    }
+
     setIsLoading(true);
 
     try {
       const res = await fetch("/api/seek-access", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ months }),
+        body: JSON.stringify({
+          months,
+          paymentMethod,
+          depositorName: paymentMethod === "BANK_TRANSFER" ? depositorName : undefined,
+        }),
       });
 
       const data = await res.json();
 
       if (!res.ok) {
         setError(data.error);
+        return;
+      }
+
+      if (data.paymentMethod === "BANK_TRANSFER") {
+        alert(
+          "무통장 입금 신청이 완료되었습니다.\n\n" +
+          `입금 계좌: ${BANK_ACCOUNT.bankName} ${BANK_ACCOUNT.accountNumber}\n` +
+          `예금주: ${BANK_ACCOUNT.accountHolder}\n` +
+          `금액: ${price.toLocaleString()}원\n\n` +
+          "입금 확인 후 열람권이 활성화됩니다."
+        );
+        router.push("/biz");
         return;
       }
 
@@ -185,6 +210,65 @@ export default function SeekAccessPage() {
         </p>
       )}
 
+      {/* 결제 수단 */}
+      <div className="card mb-6 space-y-4">
+        <h2 className="font-bold text-sm text-gray-300">결제 수단</h2>
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            type="button"
+            onClick={() => setPaymentMethod("TOSS")}
+            className={`p-4 rounded-xl border text-center transition-all ${
+              paymentMethod === "TOSS"
+                ? "border-primary bg-primary/10"
+                : "border-dark-border hover:border-gray-500"
+            }`}
+          >
+            <p className="font-bold text-sm">카드/간편결제</p>
+            <p className="text-xs text-gray-500 mt-1">토스페이먼츠</p>
+          </button>
+          <button
+            type="button"
+            onClick={() => setPaymentMethod("BANK_TRANSFER")}
+            className={`p-4 rounded-xl border text-center transition-all ${
+              paymentMethod === "BANK_TRANSFER"
+                ? "border-secondary bg-secondary/10"
+                : "border-dark-border hover:border-gray-500"
+            }`}
+          >
+            <p className="font-bold text-sm">무통장 입금</p>
+            <p className="text-xs text-gray-500 mt-1">계좌이체</p>
+          </button>
+        </div>
+
+        {paymentMethod === "BANK_TRANSFER" && (
+          <div className="space-y-3">
+            <div className="bg-dark-bg rounded-lg p-4 space-y-2">
+              <p className="text-sm font-medium text-gray-300">입금 계좌 정보</p>
+              <div className="text-sm text-gray-400 space-y-1">
+                <p>은행: <span className="text-white font-medium">{BANK_ACCOUNT.bankName}</span></p>
+                <p>계좌: <span className="text-white font-medium">{BANK_ACCOUNT.accountNumber}</span></p>
+                <p>예금주: <span className="text-white font-medium">{BANK_ACCOUNT.accountHolder}</span></p>
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm text-gray-400 mb-1">
+                입금자명 <span className="text-urgent">*</span>
+              </label>
+              <input
+                type="text"
+                value={depositorName}
+                onChange={(e) => setDepositorName(e.target.value)}
+                className="input-field"
+                placeholder="실제 입금자명을 입력하세요"
+              />
+            </div>
+            <p className="text-xs text-gray-500">
+              입금 확인까지 영업일 기준 1~2시간이 소요됩니다.
+            </p>
+          </div>
+        )}
+      </div>
+
       {/* 결제 */}
       <div className="card">
         <div className="flex items-center justify-between mb-4">
@@ -203,7 +287,11 @@ export default function SeekAccessPage() {
           disabled={isLoading}
           className="w-full btn-primary py-3 disabled:opacity-50"
         >
-          {isLoading ? "처리 중..." : `${formatPriceWithUnit(price)} 결제하기`}
+          {isLoading
+            ? "처리 중..."
+            : paymentMethod === "BANK_TRANSFER"
+              ? `${formatPriceWithUnit(price)} 무통장 입금 신청`
+              : `${formatPriceWithUnit(price)} 결제하기`}
         </button>
         <p className="text-xs text-gray-600 text-center mt-3">
           본 서비스는 디지털 콘텐츠로 열람 1건 이상 시 환불이 불가합니다.

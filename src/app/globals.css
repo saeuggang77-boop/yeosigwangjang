@@ -47,8 +47,8 @@
     @apply card border-urgent shadow-lg shadow-urgent/10;
   }
 
-  /* 무료 카드 */
-  .card-free {
+  /* 라이트 카드 */
+  .card-light {
     @apply card opacity-60 text-sm;
   }
 

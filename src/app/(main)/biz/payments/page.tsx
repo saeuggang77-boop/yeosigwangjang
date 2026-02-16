@@ -18,6 +18,7 @@ const TYPE_LABELS: Record<string, string> = {
   JOB_PREMIUM: "구인글 (프리미엄)",
   JOB_URGENT: "긴급 구인 추가",
   JOB_BUMP: "끌올",
+  JOB_BUMP_PKG: "끌올 패키지",
   JOB_PKG_BASIC: "패키지 (기본)",
   JOB_PKG_PREMIUM: "패키지 (프리미엄)",
   SEEK_ACCESS: "구직글 열람권",

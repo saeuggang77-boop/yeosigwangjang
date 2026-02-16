@@ -86,7 +86,7 @@ export default function ScrapsPage() {
       return <span className="text-xs text-premium-gold font-medium">프리미엄</span>;
     if (tier === "BASIC")
       return <span className="text-xs text-secondary font-medium">기본</span>;
-    return <span className="text-xs text-gray-500">무료</span>;
+    return <span className="text-xs text-gray-500">라이트</span>;
   };
 
   return (

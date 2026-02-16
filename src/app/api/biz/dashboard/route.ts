@@ -26,6 +26,7 @@ export async function GET() {
           bizName: true,
           region: true,
           phone: true,
+          bumpCredits: true,
           hasSeekAccess: true,
           seekAccessUntil: true,
           isVerifiedBiz: true,
@@ -73,7 +74,7 @@ export async function GET() {
     const urgentJobs = activeJobs.filter((j) => j.isUrgent).length;
     const premiumJobs = activeJobs.filter((j) => j.tier === "PREMIUM").length;
     const basicJobs = activeJobs.filter((j) => j.tier === "BASIC").length;
-    const freeJobs = activeJobs.filter((j) => j.tier === "FREE").length;
+    const lightJobs = activeJobs.filter((j) => j.tier === "LIGHT").length;
 
     // 전환율 (조회 → 연락)
     const conversionRate =
@@ -178,8 +179,8 @@ export async function GET() {
 
     // ─── 업그레이드 추천 ───
     const upgradeSuggestions: string[] = [];
-    if (freeJobs > 0)
-      upgradeSuggestions.push("FREE_TO_BASIC");
+    if (lightJobs > 0)
+      upgradeSuggestions.push("LIGHT_TO_BASIC");
     if (basicJobs > 0 && premiumJobs === 0)
       upgradeSuggestions.push("BASIC_TO_PREMIUM");
     if (!bizUser.hasSeekAccess || (bizUser.seekAccessUntil && bizUser.seekAccessUntil < now))
@@ -207,7 +208,7 @@ export async function GET() {
         urgentJobs,
         premiumJobs,
         basicJobs,
-        freeJobs,
+        lightJobs,
         totalViews,
         totalContactClicks,
         totalScraps,
@@ -218,6 +219,7 @@ export async function GET() {
       topJobs,
       ranking,
       upgradeSuggestions,
+      bumpCredits: bizUser.bumpCredits,
       seekAccess: {
         hasAccess: bizUser.hasSeekAccess && !seekAccessExpired,
         expiresAt: bizUser.seekAccessUntil,

@@ -11,6 +11,12 @@ const TIER_CONFIG: Record<
   string,
   { price: number; paymentType: PaymentType; label: string; jobTier: string }
 > = {
+  LIGHT: {
+    price: JOB_PRICES.LIGHT,
+    paymentType: "JOB_BASIC",
+    label: "라이트 구인글",
+    jobTier: "LIGHT",
+  },
   BASIC: {
     price: JOB_PRICES.BASIC,
     paymentType: "JOB_BASIC",
@@ -49,7 +55,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { packageType, jobData, isUrgent } = body;
+    const { packageType, jobData, isUrgent, paymentMethod, depositorName } = body;
 
     // 패키지 타입 확인
     const config = TIER_CONFIG[packageType];
@@ -110,7 +116,7 @@ export async function POST(req: NextRequest) {
     // 가격 계산 (단품 + 긴급 추가 옵션)
     let amount = config.price;
     const addUrgent =
-      isUrgent && !["PKG_PREMIUM"].includes(packageType) && packageType !== "FREE";
+      isUrgent && !["PKG_PREMIUM", "LIGHT"].includes(packageType);
     if (addUrgent) {
       amount += JOB_PRICES.URGENT;
     }
@@ -119,6 +125,16 @@ export async function POST(req: NextRequest) {
     const description_text = addUrgent
       ? `${config.label} + 긴급`
       : config.label;
+
+    const isBankTransfer = paymentMethod === "BANK_TRANSFER";
+
+    // 무통장 입금 시 입금자명 필수
+    if (isBankTransfer && !depositorName?.trim()) {
+      return NextResponse.json(
+        { error: "입금자명을 입력해주세요." },
+        { status: 400 }
+      );
+    }
 
     // Payment 레코드 생성 (PENDING)
     const payment = await prisma.payment.create({
@@ -129,8 +145,24 @@ export async function POST(req: NextRequest) {
         tossOrderId: orderId,
         description: description_text,
         bizUserId: session.user.id,
+        paymentMethod: isBankTransfer ? "BANK_TRANSFER" : "TOSS",
+        depositorName: isBankTransfer ? depositorName.trim() : null,
       },
     });
+
+    // 무통장 입금 → 토스 결제 불필요, 바로 응답
+    if (isBankTransfer) {
+      return NextResponse.json({
+        paymentId: payment.id,
+        orderId,
+        amount,
+        orderName: description_text,
+        packageType,
+        jobTier: config.jobTier,
+        isUrgent: addUrgent || packageType === "PKG_PREMIUM",
+        paymentMethod: "BANK_TRANSFER",
+      });
+    }
 
     return NextResponse.json({
       paymentId: payment.id,
@@ -139,7 +171,9 @@ export async function POST(req: NextRequest) {
       orderName: description_text,
       customerKey: session.user.id,
       packageType,
+      jobTier: config.jobTier,
       isUrgent: addUrgent || packageType === "PKG_PREMIUM",
+      paymentMethod: "TOSS",
     });
   } catch (error) {
     console.error("구인글 결제 준비 오류:", error);

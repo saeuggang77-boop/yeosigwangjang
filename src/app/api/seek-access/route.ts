@@ -74,11 +74,20 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { months = 1 } = await req.json();
+    const { months = 1, paymentMethod, depositorName } = await req.json();
 
     if (![1, 2, 3].includes(months)) {
       return NextResponse.json(
         { error: "1~3개월만 선택 가능합니다." },
+        { status: 400 }
+      );
+    }
+
+    const isBankTransfer = paymentMethod === "BANK_TRANSFER";
+
+    if (isBankTransfer && !depositorName?.trim()) {
+      return NextResponse.json(
+        { error: "입금자명을 입력해주세요." },
         { status: 400 }
       );
     }
@@ -105,13 +114,25 @@ export async function POST(req: NextRequest) {
         type: "SEEK_ACCESS",
         amount: SEEK_ACCESS_PRICE * months,
         months,
-        status: "COMPLETED", // TODO: 토스페이먼츠 연동 시 PENDING → COMPLETED
+        status: isBankTransfer ? "PENDING" : "COMPLETED",
         description: `구직글 열람권 ${months}개월`,
         bizUserId: session.user.id,
+        paymentMethod: isBankTransfer ? "BANK_TRANSFER" : "TOSS",
+        depositorName: isBankTransfer ? depositorName.trim() : null,
       },
     });
 
-    // 열람권 활성화
+    // 무통장 입금: 열람권 미부여 (관리자 확인 후 부여)
+    if (isBankTransfer) {
+      return NextResponse.json({
+        paymentId: payment.id,
+        amount: payment.amount,
+        paymentMethod: "BANK_TRANSFER",
+        message: "무통장 입금 신청이 완료되었습니다. 입금 확인 후 열람권이 활성화됩니다.",
+      });
+    }
+
+    // 토스 결제: 열람권 즉시 활성화
     await prisma.bizUser.update({
       where: { id: session.user.id },
       data: {

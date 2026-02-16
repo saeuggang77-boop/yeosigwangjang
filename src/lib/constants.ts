@@ -81,3 +81,12 @@ export const BIZ_CATEGORIES = [
 export const BIZ_CATEGORY_MAP = Object.fromEntries(
   BIZ_CATEGORIES.map((c) => [c.key, c])
 ) as Record<string, (typeof BIZ_CATEGORIES)[number]>;
+
+// ==========================================
+// 무통장 입금 계좌 정보
+// ==========================================
+export const BANK_ACCOUNT = {
+  bankName: "국민은행",
+  accountNumber: "000-000000-00-000",
+  accountHolder: "여시광장",
+} as const;

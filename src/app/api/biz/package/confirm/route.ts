@@ -13,6 +13,9 @@ const PACKAGE_TO_TIER: Record<string, string> = {
   JOB_PKG_PREMIUM: "PREMIUM",
 };
 
+// NOTE: LIGHT tier는 JOB_BASIC PaymentType을 사용하지만,
+// checkout에서 jobTier="LIGHT"로 설정하여 confirm에서 해당 tier를 직접 받음
+
 // 패키지 상품인지 확인 (열람권 포함)
 const IS_PACKAGE = new Set(["JOB_PKG_BASIC", "JOB_PKG_PREMIUM"]);
 
@@ -24,9 +27,11 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const { paymentKey, orderId, amount, jobData } = await req.json();
+    const { paymentKey, orderId, amount, jobData, paymentMethod } = await req.json();
 
-    if (!paymentKey || !orderId || !amount || !jobData) {
+    const isBankTransfer = paymentMethod === "BANK_TRANSFER";
+
+    if ((!isBankTransfer && !paymentKey) || !orderId || !amount || !jobData) {
       return NextResponse.json(
         { error: "결제 정보가 누락되었습니다." },
         { status: 400 }
@@ -63,7 +68,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const tier = PACKAGE_TO_TIER[payment.type];
+    // LIGHT tier는 JOB_BASIC PaymentType을 공유하므로 description으로 판별
+    const isLightTier = payment.description?.includes("라이트");
+    const tier = isLightTier ? "LIGHT" : PACKAGE_TO_TIER[payment.type];
     if (!tier) {
       return NextResponse.json(
         { error: "잘못된 결제 유형입니다." },
@@ -71,32 +78,35 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 토스 결제 승인 요청
-    if (TOSS_SECRET_KEY) {
-      const tossRes = await fetch(
-        "https://api.tosspayments.com/v1/payments/confirm",
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Basic ${Buffer.from(TOSS_SECRET_KEY + ":").toString("base64")}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ paymentKey, orderId, amount }),
-        }
-      );
-
-      const tossData = await tossRes.json();
-
-      if (!tossRes.ok) {
-        console.error("토스 결제 승인 실패:", tossData);
-        await prisma.payment.update({
-          where: { id: payment.id },
-          data: { status: "CANCELLED" },
-        });
-        return NextResponse.json(
-          { error: tossData.message || "결제 승인에 실패했습니다." },
-          { status: 400 }
+    // 무통장 입금이 아닌 경우에만 토스 결제 승인
+    if (!isBankTransfer) {
+      // 토스 결제 승인 요청
+      if (TOSS_SECRET_KEY) {
+        const tossRes = await fetch(
+          "https://api.tosspayments.com/v1/payments/confirm",
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Basic ${Buffer.from(TOSS_SECRET_KEY + ":").toString("base64")}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ paymentKey, orderId, amount }),
+          }
         );
+
+        const tossData = await tossRes.json();
+
+        if (!tossRes.ok) {
+          console.error("토스 결제 승인 실패:", tossData);
+          await prisma.payment.update({
+            where: { id: payment.id },
+            data: { status: "CANCELLED" },
+          });
+          return NextResponse.json(
+            { error: tossData.message || "결제 승인에 실패했습니다." },
+            { status: 400 }
+          );
+        }
       }
     }
 
@@ -116,13 +126,19 @@ export async function POST(req: NextRequest) {
     // 트랜잭션 배열 구성
     const transactions = [];
 
-    // 1. Payment → COMPLETED
-    transactions.push(
-      prisma.payment.update({
-        where: { id: payment.id },
-        data: { status: "COMPLETED", tossPaymentKey: paymentKey },
-      })
-    );
+    // 1. Payment 상태 업데이트
+    if (isBankTransfer) {
+      // 무통장: PENDING 유지 (관리자 확인 후 COMPLETED)
+      // tossPaymentKey 없음
+    } else {
+      // 토스: COMPLETED
+      transactions.push(
+        prisma.payment.update({
+          where: { id: payment.id },
+          data: { status: "COMPLETED", tossPaymentKey: paymentKey },
+        })
+      );
+    }
 
     // 2. Job 생성
     const {
@@ -145,7 +161,7 @@ export async function POST(req: NextRequest) {
       prisma.job.create({
         data: {
           type: "HIRE",
-          tier: tier as "BASIC" | "PREMIUM",
+          tier: tier as "LIGHT" | "BASIC" | "PREMIUM",
           title: title.trim(),
           bizName: bizName?.trim() || null,
           region,
@@ -159,17 +175,18 @@ export async function POST(req: NextRequest) {
           contact,
           contactType: contactType || "KAKAO",
           images: images || [],
-          isUrgent,
-          urgentUntil,
-          expiresAt,
+          isUrgent: isBankTransfer ? false : isUrgent, // 무통장: 입금 확인 후 적용
+          urgentUntil: isBankTransfer ? null : urgentUntil,
+          expiresAt: isBankTransfer ? null : expiresAt, // 무통장: 입금 확인 후 설정
+          isActive: !isBankTransfer, // 무통장: 입금 확인 전까지 비활성
           bizUserId: session.user.id,
           paymentId: payment.id,
         },
       })
     );
 
-    // 3. 패키지 상품이면 열람권 부여 (1개월)
-    if (IS_PACKAGE.has(payment.type)) {
+    // 3. 패키지 상품이면 열람권 부여 (1개월) — 무통장은 관리자 확인 후
+    if (IS_PACKAGE.has(payment.type) && !isBankTransfer) {
       const bizUser = await prisma.bizUser.findUnique({
         where: { id: session.user.id },
         select: { hasSeekAccess: true, seekAccessUntil: true },
@@ -206,6 +223,17 @@ export async function POST(req: NextRequest) {
     const results = await prisma.$transaction(transactions);
     // results[1]은 생성된 Job
     const createdJob = results[1] as { id: string };
+
+    if (isBankTransfer) {
+      return NextResponse.json({
+        message: "무통장 입금 신청이 완료되었습니다. 입금 확인 후 구인글이 활성화됩니다.",
+        jobId: createdJob.id,
+        tier,
+        isUrgent: false,
+        seekAccessGranted: false,
+        paymentMethod: "BANK_TRANSFER",
+      });
+    }
 
     return NextResponse.json({
       message: "결제가 완료되었습니다. 구인글이 등록되었습니다.",

@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 
 const TOSS_SECRET_KEY = process.env.TOSS_SECRET_KEY || "";
 
-// POST /api/biz/bump/confirm — 끌올 결제 승인 + 즉시 적용
+// POST /api/biz/bump/confirm — 끌올 결제 승인 + 즉시 적용 (크레딧/결제 분기)
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session || session.user.userType !== "BIZ") {
@@ -13,9 +13,9 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const { paymentKey, orderId, amount, jobId } = await req.json();
+    const { paymentKey, orderId, amount, jobId, useCredit } = await req.json();
 
-    if (!paymentKey || !orderId || !amount || !jobId) {
+    if (!orderId || !jobId) {
       return NextResponse.json({ error: "결제 정보가 누락되었습니다." }, { status: 400 });
     }
 
@@ -36,10 +36,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "이미 처리된 결제입니다." }, { status: 400 });
     }
 
-    if (payment.amount !== amount) {
-      return NextResponse.json({ error: "결제 금액이 일치하지 않습니다." }, { status: 400 });
-    }
-
     if (payment.type !== "JOB_BUMP") {
       return NextResponse.json({ error: "잘못된 결제 유형입니다." }, { status: 400 });
     }
@@ -52,6 +48,63 @@ export async function POST(req: NextRequest) {
 
     if (!job || job.bizUserId !== session.user.id) {
       return NextResponse.json({ error: "구인글을 찾을 수 없습니다." }, { status: 404 });
+    }
+
+    const now = new Date();
+
+    // ─── 크레딧 차감 모드 ───
+    if (useCredit) {
+      // 크레딧 잔액 재확인
+      const bizUser = await prisma.bizUser.findUnique({
+        where: { id: session.user.id },
+        select: { bumpCredits: true },
+      });
+
+      if (!bizUser || bizUser.bumpCredits <= 0) {
+        await prisma.payment.update({
+          where: { id: payment.id },
+          data: { status: "CANCELLED" },
+        });
+        return NextResponse.json(
+          { error: "끌올 크레딧이 부족합니다." },
+          { status: 400 }
+        );
+      }
+
+      // 트랜잭션: 크레딧 차감 + 끌올 + Payment 완료
+      const [, , updatedBizUser] = await prisma.$transaction([
+        prisma.payment.update({
+          where: { id: payment.id },
+          data: { status: "COMPLETED" },
+        }),
+        prisma.job.update({
+          where: { id: jobId },
+          data: {
+            lastBumpedAt: now,
+            bumpCount: { increment: 1 },
+          },
+        }),
+        prisma.bizUser.update({
+          where: { id: session.user.id },
+          data: { bumpCredits: { decrement: 1 } },
+          select: { bumpCredits: true },
+        }),
+      ]);
+
+      return NextResponse.json({
+        message: "크레딧으로 끌올이 완료되었습니다.",
+        bumpedAt: now,
+        remainingCredits: updatedBizUser.bumpCredits,
+      });
+    }
+
+    // ─── 일반 결제 모드 ───
+    if (!paymentKey || amount === undefined) {
+      return NextResponse.json({ error: "결제 정보가 누락되었습니다." }, { status: 400 });
+    }
+
+    if (payment.amount !== amount) {
+      return NextResponse.json({ error: "결제 금액이 일치하지 않습니다." }, { status: 400 });
     }
 
     // 토스 결제 승인 요청
@@ -84,7 +137,6 @@ export async function POST(req: NextRequest) {
     }
 
     // 결제 완료 + 끌올 적용 (트랜잭션)
-    const now = new Date();
     await prisma.$transaction([
       prisma.payment.update({
         where: { id: payment.id },
@@ -105,6 +157,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       message: "끌올이 완료되었습니다. 구인글이 목록 상단으로 이동합니다.",
       bumpedAt: now,
+      remainingCredits: 0,
     });
   } catch (error) {
     console.error("끌올 결제 승인 오류:", error);
