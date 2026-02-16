@@ -184,7 +184,7 @@ export default function GuidePage() {
             <a
               key={s.id}
               href={`#${s.id}`}
-              className="px-3 py-1.5 rounded-lg text-xs bg-dark-card text-gray-400 hover:text-white hover:bg-primary/20 transition-colors"
+              className="px-4 py-2.5 rounded-lg text-xs bg-dark-card text-gray-400 hover:text-white hover:bg-primary/20 transition-colors"
             >
               {s.label}
             </a>
@@ -209,7 +209,7 @@ export default function GuidePage() {
       <section id="types">
         <SectionHeader emoji="2" title="업종별 비교" subtitle="업종마다 분위기, 급여, 난이도가 다릅니다" />
         <div className="overflow-x-auto -mx-4 px-4">
-          <table className="w-full min-w-[640px] text-sm border-collapse">
+          <table className="w-full min-w-[560px] text-sm border-collapse">
             <thead>
               <tr className="border-b border-dark-border text-xs text-gray-500">
                 <th className="text-left py-3 font-medium">업종</th>

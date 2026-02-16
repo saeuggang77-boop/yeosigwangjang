@@ -77,8 +77,33 @@ export default function BusinessDetailPage() {
 
   if (!biz) return null;
 
+  // ─── LocalBusiness 구조화 데이터 ───
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "LocalBusiness",
+    name: biz.name,
+    description: biz.description || undefined,
+    image: biz.logo || undefined,
+    telephone: biz.phone || undefined,
+    url: biz.website || undefined,
+    ...(biz.address && {
+      address: {
+        "@type": "PostalAddress",
+        streetAddress: biz.address + (biz.addressDetail ? ` ${biz.addressDetail}` : ""),
+        addressLocality: biz.subRegion || biz.region || undefined,
+        addressRegion: biz.region || undefined,
+        addressCountry: "KR",
+      },
+    }),
+    ...(biz.openingHours && { openingHours: biz.openingHours }),
+  };
+
   return (
     <div className="max-w-3xl mx-auto px-4 py-6">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       {/* 뒤로가기 */}
       <div className="flex items-center gap-2 mb-6 text-sm">
         <Link

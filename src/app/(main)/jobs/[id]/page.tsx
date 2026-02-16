@@ -64,8 +64,57 @@ export default async function JobDetailPage({ params }: Props) {
   const salaryComparison =
     job.type === "HIRE" ? compareSalary(job.salary, job.bizType) : null;
 
+  // ─── JobPosting 구조화 데이터 (구인글만) ───
+  const baseUrl = process.env.NEXTAUTH_URL || "https://yeosi.kr";
+  const jsonLd =
+    job.type === "HIRE"
+      ? {
+          "@context": "https://schema.org",
+          "@type": "JobPosting",
+          title: job.title,
+          description: job.description,
+          datePosted: job.createdAt.toISOString().split("T")[0],
+          validThrough: job.expiresAt
+            ? job.expiresAt.toISOString().split("T")[0]
+            : undefined,
+          employmentType: "FULL_TIME",
+          hiringOrganization: {
+            "@type": "Organization",
+            name: job.bizName || "업소명 비공개",
+          },
+          jobLocation: {
+            "@type": "Place",
+            address: {
+              "@type": "PostalAddress",
+              addressLocality: job.subRegion || job.region,
+              addressRegion: job.region,
+              addressCountry: "KR",
+            },
+          },
+          industry: job.bizType,
+          url: `${baseUrl}/jobs/${job.id}`,
+          ...(job.salary && {
+            baseSalary: {
+              "@type": "MonetaryAmount",
+              currency: "KRW",
+              value: {
+                "@type": "QuantitativeValue",
+                value: job.salary,
+                unitText: "DAY",
+              },
+            },
+          }),
+        }
+      : null;
+
   return (
     <div className="max-w-3xl mx-auto px-4 py-6">
+      {jsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      )}
       {/* 뱃지 */}
       <div className="flex items-center gap-2 mb-3">
         {job.isUrgent && <span className="badge-urgent">긴급</span>}
@@ -123,7 +172,7 @@ export default async function JobDetailPage({ params }: Props) {
               : ""
         }`}
       >
-        <dl className="grid grid-cols-2 gap-y-3 gap-x-4 text-sm">
+        <dl className="grid grid-cols-1 sm:grid-cols-2 gap-y-3 gap-x-4 text-sm">
           {job.type === "HIRE" ? (
             <>
               <div>
@@ -200,7 +249,7 @@ export default async function JobDetailPage({ params }: Props) {
               {job.benefits.map((b, i) => (
                 <span
                   key={i}
-                  className="px-2 py-1 bg-dark-card rounded text-xs text-gray-300"
+                  className="px-3 py-1.5 bg-dark-card rounded text-xs text-gray-300"
                 >
                   {b}
                 </span>

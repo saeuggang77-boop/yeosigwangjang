@@ -282,7 +282,7 @@ export default function HomePage() {
         </div>
 
         {/* 무료 카드 */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {FREE_JOBS.map((job) => (
             <JobCardFree key={job.id} job={job} />
           ))}
@@ -306,13 +306,13 @@ export default function HomePage() {
                 href="https://cafe.naver.com/bamyeosi"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="btn-outline text-xs py-1.5 px-3"
+                className="btn-outline text-xs py-2 px-4"
               >
                 카페 바로가기
               </a>
               <Link
                 href="/community"
-                className="hidden sm:inline-flex btn-primary text-xs py-1.5 px-3"
+                className="hidden sm:inline-flex btn-primary text-xs py-2 px-4"
               >
                 여시광장 게시판
               </Link>
@@ -415,7 +415,7 @@ export default function HomePage() {
             <Link
               key={biz.id}
               href={`/directory/${biz.id}`}
-              className="min-w-[220px] snap-start shrink-0"
+              className="min-w-[200px] sm:min-w-[220px] snap-start shrink-0"
             >
               <div className="card hover:border-secondary/50 transition-all h-full">
                 <div className="w-full h-20 rounded-lg bg-gradient-to-br from-secondary/10 to-dark-card mb-3 flex items-center justify-center">

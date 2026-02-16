@@ -334,7 +334,7 @@ export default function JobWritePage() {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-sm text-gray-400 mb-1">
                 지역 <span className="text-urgent">*</span>
@@ -389,7 +389,7 @@ export default function JobWritePage() {
             </select>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-sm text-gray-400 mb-1">
                 급여 조건 <span className="text-urgent">*</span>
@@ -503,7 +503,7 @@ export default function JobWritePage() {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-sm text-gray-400 mb-1">
                 연락처 <span className="text-urgent">*</span>
@@ -558,7 +558,7 @@ export default function JobWritePage() {
             <p className="text-xs text-gray-500">
               수정/삭제 링크가 이메일로 발송됩니다.
             </p>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-sm text-gray-400 mb-1">
                   이메일 <span className="text-urgent">*</span>
@@ -593,7 +593,7 @@ export default function JobWritePage() {
           <h2 className="font-bold text-sm text-gray-300">상품 선택</h2>
 
           {/* 단품 */}
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {visibleTiers
               .filter((t) => !t.bizOnly)
               .map((t) => (
@@ -628,7 +628,7 @@ export default function JobWritePage() {
                 <div className="flex-1 h-px bg-dark-border" />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {visibleTiers
                   .filter((t) => t.bizOnly)
                   .map((t) => (

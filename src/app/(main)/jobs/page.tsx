@@ -163,7 +163,7 @@ function JobsContent() {
       <div className="flex gap-2 mb-6">
         <button
           onClick={() => updateParam("tab", "hire")}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+          className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
             tab === "hire"
               ? "bg-primary text-white"
               : "bg-dark-card text-gray-400 hover:text-white"
@@ -173,7 +173,7 @@ function JobsContent() {
         </button>
         <button
           onClick={() => updateParam("tab", "seek")}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+          className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
             tab === "seek"
               ? "bg-primary text-white"
               : "bg-dark-card text-gray-400 hover:text-white"
@@ -294,7 +294,7 @@ function JobsContent() {
           {freeJobs.length > 0 && (
             <section>
               <h2 className="text-lg font-bold mb-4 text-gray-500">무료 구인</h2>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                 {freeJobs.map((j) => (
                   <JobCardFree key={j.id} job={toCardData(j)} />
                 ))}
@@ -349,7 +349,7 @@ function JobsContent() {
             <button
               key={p}
               onClick={() => updateParam("page", p.toString())}
-              className={`w-9 h-9 rounded-lg text-sm ${
+              className={`w-10 h-10 rounded-lg text-sm ${
                 p === page
                   ? "bg-primary text-white"
                   : "bg-dark-card text-gray-400 hover:text-white"

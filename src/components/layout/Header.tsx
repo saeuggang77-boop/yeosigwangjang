@@ -46,7 +46,7 @@ export default function Header() {
           {/* 우측: 검색 + 유저 */}
           <div className="flex items-center gap-2">
             {/* 검색 버튼 (모바일) */}
-            <button className="md:hidden p-2 text-gray-400 hover:text-white">
+            <button className="md:hidden p-2.5 -m-0.5 text-gray-400 hover:text-white">
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
@@ -78,7 +78,7 @@ export default function Header() {
                   <NotificationBell />
                 )}
                 <div className="relative group">
-                  <button className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-sm text-gray-300 hover:text-white hover:bg-dark-surface transition-colors">
+                  <button className="flex items-center gap-1.5 px-2.5 py-2 rounded-lg text-sm text-gray-300 hover:text-white hover:bg-dark-surface transition-colors">
                     <div className="w-7 h-7 rounded-full bg-primary/30 flex items-center justify-center text-xs text-primary-light font-bold">
                       {(session.user.nickname?.[0] || session.user.email?.[0] || "U").toUpperCase()}
                     </div>
@@ -140,7 +140,7 @@ export default function Header() {
             {/* 모바일 햄버거 */}
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
-              className="md:hidden p-2 text-gray-400 hover:text-white"
+              className="md:hidden p-2.5 -m-0.5 text-gray-400 hover:text-white"
             >
               {mobileOpen ? (
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -165,7 +165,7 @@ export default function Header() {
                 key={item.href}
                 href={item.href}
                 onClick={() => setMobileOpen(false)}
-                className="block px-3 py-2.5 rounded-lg text-sm font-medium text-gray-300 hover:text-white hover:bg-dark-surface"
+                className="block px-3 py-3 rounded-lg text-sm font-medium text-gray-300 hover:text-white hover:bg-dark-surface"
               >
                 {item.label}
               </Link>
@@ -173,7 +173,7 @@ export default function Header() {
             <Link
               href="/jobs/write"
               onClick={() => setMobileOpen(false)}
-              className="block px-3 py-2.5 rounded-lg text-sm font-medium text-secondary hover:bg-dark-surface"
+              className="block px-3 py-3 rounded-lg text-sm font-medium text-secondary hover:bg-dark-surface"
             >
               구인등록
             </Link>

@@ -164,12 +164,12 @@ export default function PrivacyPage() {
                   key={i}
                   className="border-b border-dark-border/50 hover:bg-dark-card/30"
                 >
-                  <td className="py-3 px-3 text-gray-300 font-medium whitespace-nowrap">
+                  <td className="py-3 px-2 sm:px-3 text-gray-300 font-medium text-xs sm:text-sm">
                     {row.purpose}
                   </td>
-                  <td className="py-3 px-3">{row.required}</td>
-                  <td className="py-3 px-3">{row.optional}</td>
-                  <td className="py-3 px-3 text-xs whitespace-nowrap">
+                  <td className="py-3 px-2 sm:px-3 text-xs sm:text-sm">{row.required}</td>
+                  <td className="py-3 px-2 sm:px-3 text-xs sm:text-sm">{row.optional}</td>
+                  <td className="py-3 px-2 sm:px-3 text-xs">
                     {row.retention}
                   </td>
                 </tr>

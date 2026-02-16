@@ -91,9 +91,17 @@
     @apply blur-md select-none pointer-events-none;
   }
 
-  /* 입력 필드 */
+  /* 입력 필드 — 모바일 최소 44px 터치 타겟 */
   .input-field {
-    @apply w-full bg-dark-card border border-dark-border rounded-lg px-4 py-2.5 text-[#F5F5F5] placeholder-gray-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors;
+    @apply w-full bg-dark-card border border-dark-border rounded-lg px-4 py-3 text-[#F5F5F5] placeholder-gray-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors text-base sm:text-sm sm:py-2.5;
+  }
+
+  /* 버튼 최소 터치 타겟 */
+  .btn-primary,
+  .btn-secondary,
+  .btn-accent,
+  .btn-outline {
+    @apply min-h-[44px] sm:min-h-0;
   }
 
   /* 스크롤바 숨김 (가로 스크롤 영역) */

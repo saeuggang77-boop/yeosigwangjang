@@ -60,7 +60,7 @@ export function JobCardPremium({ job }: { job: JobCardData }) {
   const sc = compareSalary(job.salary, job.bizType);
   return (
     <Link href={`/jobs/${job.id}`} className="block">
-      <div className="card-premium group hover:shadow-premium-border/20 hover:shadow-xl transition-all min-w-[280px] snap-start shrink-0">
+      <div className="card-premium group hover:shadow-premium-border/20 hover:shadow-xl transition-all min-w-[260px] sm:min-w-[280px] snap-start shrink-0">
         {/* 썸네일 영역 */}
         {job.images && job.images.length > 0 ? (
           <div className="w-full h-36 rounded-lg bg-dark-card mb-3 overflow-hidden">

@@ -111,7 +111,7 @@ export default function BizDashboardPage() {
       </div>
 
       {/* ─── 핵심 지표 ─── */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         <StatCard label="활성 구인글" value={stats.activeJobs} unit="건" />
         <StatCard label="총 조회수" value={stats.totalViews} unit="회" />
         <StatCard label="연락처 클릭" value={stats.totalContactClicks} unit="회" />
@@ -269,7 +269,7 @@ export default function BizDashboardPage() {
         <div className="card">
           <h2 className="font-bold text-sm text-gray-300 mb-3">구인글 성과 TOP {topJobs.length}</h2>
           <div className="overflow-x-auto">
-            <table className="w-full text-sm min-w-[500px]">
+            <table className="w-full text-sm min-w-[440px]">
               <thead>
                 <tr className="text-xs text-gray-500 border-b border-dark-border">
                   <th className="text-left py-2 font-medium">구인글</th>

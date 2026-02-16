@@ -289,7 +289,7 @@ export default function SeekWritePage() {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-sm text-gray-400 mb-1">
                 연락처 <span className="text-urgent">*</span>
