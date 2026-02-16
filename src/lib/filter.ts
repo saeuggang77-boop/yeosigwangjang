@@ -27,13 +27,6 @@ const FRAUD_KEYWORDS = [
   "거짓 없는", "100% 보장",
 ];
 
-const ALL_BANNED = [
-  ...GENDER_KEYWORDS,
-  ...AGE_KEYWORDS,
-  ...APPEARANCE_KEYWORDS,
-  ...FRAUD_KEYWORDS,
-];
-
 export interface FilterResult {
   isClean: boolean;
   violations: { keyword: string; category: string }[];

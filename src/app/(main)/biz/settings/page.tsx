@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSession } from "next-auth/react";
 import { REGIONS } from "@/lib/constants";
 
 interface BizProfile {
@@ -15,7 +14,6 @@ interface BizProfile {
 }
 
 export default function BizSettingsPage() {
-  const { data: session } = useSession();
   const [profile, setProfile] = useState<BizProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
