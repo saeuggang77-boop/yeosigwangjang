@@ -63,3 +63,21 @@ export const CONTACT_TYPES = [
   { value: "KAKAO", label: "카카오톡" },
   { value: "BOTH", label: "둘 다" },
 ] as const;
+
+// ==========================================
+// 업체 디렉토리 카테고리
+// ==========================================
+export const BIZ_CATEGORIES = [
+  { key: "surgery-skin", enum: "SURGERY_SKIN", label: "성형·피부·시술", icon: "💉" },
+  { key: "hair-makeup", enum: "HAIR_MAKEUP", label: "헤어·메이크업", icon: "💇" },
+  { key: "fashion", enum: "FASHION", label: "의상·원복·드레스", icon: "👗" },
+  { key: "nail-beauty", enum: "NAIL_BEAUTY", label: "네일·속눈썹·왁싱", icon: "💅" },
+  { key: "fitness", enum: "FITNESS", label: "운동·다이어트", icon: "💪" },
+  { key: "tax-law", enum: "TAX_LAW", label: "세무·법률·보험", icon: "📋" },
+  { key: "realestate", enum: "REALESTATE", label: "부동산·원룸", icon: "🏠" },
+  { key: "etc", enum: "ETC", label: "기타 서비스", icon: "🔧" },
+] as const;
+
+export const BIZ_CATEGORY_MAP = Object.fromEntries(
+  BIZ_CATEGORIES.map((c) => [c.key, c])
+) as Record<string, (typeof BIZ_CATEGORIES)[number]>;
