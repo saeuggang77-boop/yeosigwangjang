@@ -34,8 +34,9 @@ export async function GET(req: NextRequest) {
       ];
     }
 
-    // 정렬
-    let orderBy: Record<string, string>[] = [];
+    // 정렬 (끌올된 글이 최신순에서 상단 우선)
+    type OrderItem = Record<string, string | Record<string, string>>;
+    let orderBy: OrderItem[] = [];
     switch (sort) {
       case "salary":
         orderBy = [{ salary: "desc" }, { createdAt: "desc" }];
@@ -43,8 +44,11 @@ export async function GET(req: NextRequest) {
       case "views":
         orderBy = [{ viewCount: "desc" }];
         break;
-      default: // latest
-        orderBy = [{ createdAt: "desc" }];
+      default: // latest — 끌올 시간 우선, 없으면 작성일 기준
+        orderBy = [
+          { lastBumpedAt: { sort: "desc", nulls: "last" } },
+          { createdAt: "desc" },
+        ];
     }
 
     const [jobs, total] = await Promise.all([
@@ -68,11 +72,19 @@ export async function GET(req: NextRequest) {
           isUrgent: true,
           urgentUntil: true,
           viewCount: true,
+          lastBumpedAt: true,
           createdAt: true,
           // 구직글 전용
           desiredRegions: true,
           desiredBizTypes: true,
           experience: true,
+          // 업소 인증/추천 뱃지
+          bizUser: {
+            select: {
+              isVerifiedBiz: true,
+              isRecommended: true,
+            },
+          },
         },
       }),
       prisma.job.count({ where }),

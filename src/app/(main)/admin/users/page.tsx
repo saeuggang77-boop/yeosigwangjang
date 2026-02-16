@@ -21,6 +21,12 @@ interface UserItem {
   bizCategory?: string;
   phone?: string;
   isApproved?: boolean;
+  // BIZ 전용
+  bizName?: string;
+  region?: string;
+  isVerifiedBiz?: boolean;
+  isRecommended?: boolean;
+  hasSeekAccess?: boolean;
   createdAt: string;
 }
 
@@ -105,6 +111,7 @@ function UsersContent() {
       <div className="flex gap-2">
         {[
           { key: "user", label: "일반 회원" },
+          { key: "biz", label: "업소 회원" },
           { key: "ad", label: "광고 업체" },
         ].map((t) => (
           <button
@@ -123,10 +130,18 @@ function UsersContent() {
 
       {/* 필터 */}
       <div className="flex gap-2">
-        {[
-          { key: "all", label: "전체" },
-          { key: "pending", label: type === "ad" ? "승인 대기" : "준회원" },
-        ].map((f) => (
+        {(type === "biz"
+          ? [
+              { key: "all", label: "전체" },
+              { key: "pending", label: "미인증" },
+              { key: "verified", label: "인증업소" },
+              { key: "recommended", label: "추천업소" },
+            ]
+          : [
+              { key: "all", label: "전체" },
+              { key: "pending", label: type === "ad" ? "승인 대기" : "준회원" },
+            ]
+        ).map((f) => (
           <button
             key={f.key}
             onClick={() => updateParam("filter", f.key)}
@@ -154,7 +169,30 @@ function UsersContent() {
             <div key={user.id} className="card">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 min-w-0">
-                  {type === "ad" ? (
+                  {type === "biz" ? (
+                    // 업소 회원
+                    <>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="font-bold text-sm">
+                          {user.bizName || "업소명 미입력"}
+                        </p>
+                        {user.isVerifiedBiz && (
+                          <span className="badge-verified">인증업소</span>
+                        )}
+                        {user.isRecommended && (
+                          <span className="badge-recommended">추천업소</span>
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-400 mt-1">
+                        {user.region || "지역 미설정"}
+                        {user.bizRegNumber && ` · 사업자번호: ${user.bizRegNumber}`}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {user.email} · {user.phone || "연락처 없음"} ·{" "}
+                        {new Date(user.createdAt).toLocaleDateString("ko-KR")}
+                      </p>
+                    </>
+                  ) : type === "ad" ? (
                     // 광고 업체
                     <>
                       <div className="flex items-center gap-2 flex-wrap">
@@ -216,8 +254,51 @@ function UsersContent() {
                 </div>
 
                 {/* 액션 버튼 */}
-                <div className="flex gap-2 shrink-0">
-                  {type === "ad" ? (
+                <div className="flex gap-2 shrink-0 flex-wrap">
+                  {type === "biz" ? (
+                    <>
+                      <button
+                        onClick={() =>
+                          handleAction(
+                            user.id,
+                            user.isVerifiedBiz ? "unverify" : "verify"
+                          )
+                        }
+                        disabled={actionLoading === user.id}
+                        className={`text-xs px-3 py-1 rounded border transition-colors disabled:opacity-50 ${
+                          user.isVerifiedBiz
+                            ? "text-gray-400 border-dark-border hover:text-urgent hover:border-urgent"
+                            : "text-success border-success/30 hover:border-success hover:bg-success/10"
+                        }`}
+                      >
+                        {actionLoading === user.id
+                          ? "..."
+                          : user.isVerifiedBiz
+                            ? "인증 해제"
+                            : "인증 지정"}
+                      </button>
+                      <button
+                        onClick={() =>
+                          handleAction(
+                            user.id,
+                            user.isRecommended ? "unrecommend" : "recommend"
+                          )
+                        }
+                        disabled={actionLoading === user.id}
+                        className={`text-xs px-3 py-1 rounded border transition-colors disabled:opacity-50 ${
+                          user.isRecommended
+                            ? "text-gray-400 border-dark-border hover:text-urgent hover:border-urgent"
+                            : "text-accent border-accent/30 hover:border-accent hover:bg-accent/10"
+                        }`}
+                      >
+                        {actionLoading === user.id
+                          ? "..."
+                          : user.isRecommended
+                            ? "추천 해제"
+                            : "추천 지정"}
+                      </button>
+                    </>
+                  ) : type === "ad" ? (
                     user.isApproved ? (
                       <button
                         onClick={() => handleAction(user.id, "revoke")}

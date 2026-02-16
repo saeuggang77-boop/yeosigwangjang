@@ -14,6 +14,7 @@ import type { JobCardData } from "@/components/job/JobCard";
 import SeekCard from "@/components/job/SeekCard";
 import type { SeekCardData } from "@/components/job/SeekCard";
 import { REGIONS, BIZ_TYPES } from "@/lib/constants";
+import JobPageBanner from "@/components/ad/JobPageBanner";
 
 export default function JobsPage() {
   return (
@@ -38,10 +39,15 @@ interface ApiJob {
   isUrgent: boolean;
   urgentUntil: string | null;
   viewCount: number;
+  lastBumpedAt: string | null;
   createdAt: string;
   desiredRegions: string[];
   desiredBizTypes: string[];
   experience: string | null;
+  bizUser?: {
+    isVerifiedBiz: boolean;
+    isRecommended: boolean;
+  } | null;
 }
 
 function JobsContent() {
@@ -115,6 +121,8 @@ function JobsContent() {
     tier: j.tier as "FREE" | "BASIC" | "PREMIUM",
     isUrgent: j.isUrgent,
     images: j.images,
+    isVerifiedBiz: j.bizUser?.isVerifiedBiz,
+    isRecommended: j.bizUser?.isRecommended,
   });
 
   // 그룹 분리 (구인탭만)
@@ -147,6 +155,9 @@ function JobsContent() {
           )}
         </div>
       </div>
+
+      {/* 구인 페이지 배너 */}
+      <JobPageBanner />
 
       {/* 탭 */}
       <div className="flex gap-2 mb-6">
@@ -208,6 +219,18 @@ function JobsContent() {
           <option value="latest">최신순</option>
           <option value="views">조회순</option>
         </select>
+
+        {tab === "hire" && (
+          <Link
+            href="/jobs/salary-guide"
+            className="text-xs text-gray-500 hover:text-primary-light transition-colors flex items-center gap-1 ml-auto"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            급여 가이드
+          </Link>
+        )}
       </div>
 
       {/* 로딩 */}

@@ -25,10 +25,45 @@ export async function GET(req: NextRequest) {
 
   try {
     const { searchParams } = new URL(req.url);
-    const type = searchParams.get("type") || "user"; // user | ad
-    const filter = searchParams.get("filter") || "all"; // all | pending
+    const type = searchParams.get("type") || "user"; // user | ad | biz
+    const filter = searchParams.get("filter") || "all"; // all | pending | verified | recommended
     const page = parseInt(searchParams.get("page") || "1");
     const limit = 30;
+
+    if (type === "biz") {
+      // 업소 회원
+      const where: Record<string, unknown> = {};
+      if (filter === "pending") where.isVerifiedBiz = false;
+      if (filter === "verified") where.isVerifiedBiz = true;
+      if (filter === "recommended") where.isRecommended = true;
+
+      const [users, total] = await Promise.all([
+        prisma.bizUser.findMany({
+          where,
+          orderBy: { createdAt: "desc" },
+          skip: (page - 1) * limit,
+          take: limit,
+          select: {
+            id: true,
+            email: true,
+            bizName: true,
+            region: true,
+            phone: true,
+            bizRegNumber: true,
+            isVerifiedBiz: true,
+            isRecommended: true,
+            hasSeekAccess: true,
+            createdAt: true,
+          },
+        }),
+        prisma.bizUser.count({ where }),
+      ]);
+
+      return NextResponse.json({
+        users,
+        pagination: { page, totalPages: Math.ceil(total / limit), total },
+      });
+    }
 
     if (type === "ad") {
       // 광고업체 회원
@@ -107,6 +142,37 @@ export async function PATCH(req: NextRequest) {
     const { userId, type, action } = await req.json();
     // type: "user" | "ad"
     // action: "approve" | "revoke" | "promote_staff" | "demote"
+
+    if (type === "biz") {
+      if (action === "verify") {
+        await prisma.bizUser.update({
+          where: { id: userId },
+          data: { isVerifiedBiz: true },
+        });
+        return NextResponse.json({ message: "인증업소로 지정되었습니다." });
+      }
+      if (action === "unverify") {
+        await prisma.bizUser.update({
+          where: { id: userId },
+          data: { isVerifiedBiz: false },
+        });
+        return NextResponse.json({ message: "인증이 해제되었습니다." });
+      }
+      if (action === "recommend") {
+        await prisma.bizUser.update({
+          where: { id: userId },
+          data: { isRecommended: true },
+        });
+        return NextResponse.json({ message: "추천업소로 지정되었습니다." });
+      }
+      if (action === "unrecommend") {
+        await prisma.bizUser.update({
+          where: { id: userId },
+          data: { isRecommended: false },
+        });
+        return NextResponse.json({ message: "추천이 해제되었습니다." });
+      }
+    }
 
     if (type === "ad") {
       if (action === "approve") {

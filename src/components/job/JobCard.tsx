@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { compareSalary } from "@/lib/salary-guide";
+import SalaryTag from "@/components/job/SalaryTag";
 
 export interface JobCardData {
   id: string;
@@ -12,11 +14,15 @@ export interface JobCardData {
   tier: "FREE" | "BASIC" | "PREMIUM";
   isUrgent?: boolean;
   images?: string[];
+  lastBumpedAt?: string | null;
   createdAt?: string;
+  isVerifiedBiz?: boolean;
+  isRecommended?: boolean;
 }
 
 // ─── 긴급 구인 카드 ───
 export function JobCardUrgent({ job }: { job: JobCardData }) {
+  const sc = compareSalary(job.salary, job.bizType);
   return (
     <Link href={`/jobs/${job.id}`} className="block">
       <div className="card-urgent group hover:shadow-urgent/20 hover:shadow-xl transition-all">
@@ -25,6 +31,8 @@ export function JobCardUrgent({ job }: { job: JobCardData }) {
           {job.tier === "PREMIUM" && (
             <span className="badge-premium">PREMIUM</span>
           )}
+          {job.isVerifiedBiz && <span className="badge-verified">인증업소</span>}
+          {job.isRecommended && <span className="badge-recommended">추천업소</span>}
         </div>
         <h3 className="font-bold text-base mb-1 group-hover:text-urgent transition-colors">
           {job.title}
@@ -34,8 +42,9 @@ export function JobCardUrgent({ job }: { job: JobCardData }) {
           {job.subRegion && ` ${job.subRegion}`} · {job.bizType}
         </p>
         {job.salary && (
-          <p className="text-sm text-secondary mt-2 font-medium">
+          <p className="text-sm text-secondary mt-2 font-medium flex items-center gap-1.5">
             {job.salary}
+            {sc && <SalaryTag level={sc.level} label={sc.label} size="xs" />}
           </p>
         )}
         {job.workHours && (
@@ -48,6 +57,7 @@ export function JobCardUrgent({ job }: { job: JobCardData }) {
 
 // ─── 프리미엄 구인 카드 ───
 export function JobCardPremium({ job }: { job: JobCardData }) {
+  const sc = compareSalary(job.salary, job.bizType);
   return (
     <Link href={`/jobs/${job.id}`} className="block">
       <div className="card-premium group hover:shadow-premium-border/20 hover:shadow-xl transition-all min-w-[280px] snap-start shrink-0">
@@ -76,9 +86,14 @@ export function JobCardPremium({ job }: { job: JobCardData }) {
           </div>
         )}
 
-        <div className="flex items-center gap-2 mb-2">
+        <div className="flex items-center gap-2 mb-2 flex-wrap">
           <span className="badge-premium">PREMIUM</span>
           {job.isUrgent && <span className="badge-urgent">긴급</span>}
+          {job.isVerifiedBiz && <span className="badge-verified">인증업소</span>}
+          {job.isRecommended && <span className="badge-recommended">추천업소</span>}
+          {job.lastBumpedAt && (
+            <span className="text-[10px] text-primary bg-primary/10 px-1.5 py-0.5 rounded font-medium">끌올</span>
+          )}
         </div>
         <h3 className="font-bold text-base mb-1 group-hover:text-premium-gold transition-colors">
           {job.title}
@@ -89,8 +104,9 @@ export function JobCardPremium({ job }: { job: JobCardData }) {
           {job.subRegion && ` ${job.subRegion}`} · {job.bizType}
         </p>
         {job.salary && (
-          <p className="text-sm text-secondary mt-2 font-medium">
+          <p className="text-sm text-secondary mt-2 font-medium flex items-center gap-1.5">
             {job.salary}
+            {sc && <SalaryTag level={sc.level} label={sc.label} size="xs" />}
           </p>
         )}
         {job.workHours && (
@@ -103,9 +119,17 @@ export function JobCardPremium({ job }: { job: JobCardData }) {
 
 // ─── 기본 구인 카드 ───
 export function JobCardBasic({ job }: { job: JobCardData }) {
+  const sc = compareSalary(job.salary, job.bizType);
   return (
     <Link href={`/jobs/${job.id}`} className="block">
       <div className="card group hover:border-primary/50 transition-all">
+        <div className="flex items-center gap-2 mb-1 flex-wrap">
+          {job.lastBumpedAt && (
+            <span className="text-[10px] text-primary bg-primary/10 px-1.5 py-0.5 rounded font-medium">끌올</span>
+          )}
+          {job.isVerifiedBiz && <span className="badge-verified">인증업소</span>}
+          {job.isRecommended && <span className="badge-recommended">추천업소</span>}
+        </div>
         <h3 className="font-bold text-sm mb-1 group-hover:text-primary-light transition-colors">
           {job.title}
         </h3>
@@ -115,8 +139,9 @@ export function JobCardBasic({ job }: { job: JobCardData }) {
           {job.subRegion && ` ${job.subRegion}`} · {job.bizType}
         </p>
         {job.salary && (
-          <p className="text-sm text-secondary mt-2 font-medium">
+          <p className="text-sm text-secondary mt-2 font-medium flex items-center gap-1.5">
             {job.salary}
+            {sc && <SalaryTag level={sc.level} label={sc.label} size="xs" />}
           </p>
         )}
         {job.workHours && (

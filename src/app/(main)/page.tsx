@@ -6,6 +6,7 @@ import {
   JobCardFree,
 } from "@/components/job/JobCard";
 import type { JobCardData } from "@/components/job/JobCard";
+import MainBanner from "@/components/ad/MainBanner";
 
 // ==========================================
 // 더미 데이터
@@ -232,30 +233,8 @@ export default function HomePage() {
   return (
     <div className="max-w-7xl mx-auto px-4 py-6 space-y-10">
 
-      {/* ── 1. 메인 배너 (광고업체 슬라이더 placeholder) ── */}
-      <section>
-        <div className="relative w-full h-44 sm:h-56 rounded-2xl overflow-hidden bg-gradient-to-r from-primary/30 via-dark-surface to-premium-border/20 border border-dark-border">
-          <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
-            <p className="text-xs text-gray-500 mb-2">AD</p>
-            <h2 className="text-xl sm:text-2xl font-bold mb-1">
-              여시광장에서 만나는 <span className="text-premium-gold">프리미엄</span> 파트너
-            </h2>
-            <p className="text-sm text-gray-400">
-              성형 · 뷰티 · 헤어 — 여시 전용 혜택
-            </p>
-            <div className="flex gap-1.5 mt-4">
-              {[0, 1, 2].map((i) => (
-                <span
-                  key={i}
-                  className={`w-2 h-2 rounded-full ${
-                    i === 0 ? "bg-primary-light" : "bg-dark-border"
-                  }`}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* ── 1. 메인 배너 (광고업체 슬라이더) ── */}
+      <MainBanner />
 
       {/* ── 2. 긴급 구인 ── */}
       <section>

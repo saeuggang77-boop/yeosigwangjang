@@ -11,6 +11,7 @@ const NAV_ITEMS = [
   { href: "/admin/users", label: "회원 관리" },
   { href: "/admin/jobs", label: "구인글 관리" },
   { href: "/admin/reports", label: "신고 관리" },
+  { href: "/admin/ads", label: "광고 관리" },
   { href: "/admin/cafe-posts", label: "카페 인기글" },
 ];
 

@@ -7,6 +7,80 @@ import Link from "next/link";
 import { REGIONS, SUB_REGIONS, BIZ_TYPES, BENEFIT_OPTIONS, CONTACT_TYPES } from "@/lib/constants";
 import { filterJobForm } from "@/lib/filter";
 import { JOB_PRICES, formatPriceWithUnit } from "@/lib/pricing";
+import { getGuideForBizType, compareSalary } from "@/lib/salary-guide";
+
+type TierKey = "FREE" | "BASIC" | "PREMIUM" | "PKG_BASIC" | "PKG_PREMIUM";
+
+const TIER_OPTIONS: {
+  key: TierKey;
+  label: string;
+  price: number;
+  desc: string;
+  benefits?: string[];
+  borderClass: string;
+  bizOnly?: boolean;
+}[] = [
+  {
+    key: "FREE",
+    label: "무료",
+    price: JOB_PRICES.FREE,
+    desc: "최하단 · 사진불가",
+    borderClass: "border-primary bg-primary/10",
+  },
+  {
+    key: "BASIC",
+    label: "기본",
+    price: JOB_PRICES.BASIC,
+    desc: "일반노출 · 사진3장",
+    borderClass: "border-primary bg-primary/10",
+  },
+  {
+    key: "PREMIUM",
+    label: "프리미엄",
+    price: JOB_PRICES.PREMIUM,
+    desc: "상단고정 · 사진5장",
+    borderClass: "border-premium-border bg-premium-border/10",
+  },
+  {
+    key: "PKG_BASIC",
+    label: "기본패키지",
+    price: JOB_PRICES.PKG_BASIC,
+    desc: "기본 구인글 + 열람권",
+    benefits: ["기본 구인글 30일", "구직글 열람권 1개월"],
+    borderClass: "border-secondary bg-secondary/10",
+    bizOnly: true,
+  },
+  {
+    key: "PKG_PREMIUM",
+    label: "프리미엄패키지",
+    price: JOB_PRICES.PKG_PREMIUM,
+    desc: "프리미엄 + 열람권 + 긴급",
+    benefits: ["프리미엄 구인글 30일", "구직글 열람권 1개월", "긴급 구인 7일 포함"],
+    borderClass: "border-premium-border bg-premium-border/10",
+    bizOnly: true,
+  },
+];
+
+// 유료 결제 필요한 tier
+const PAID_TIERS = new Set<TierKey>(["BASIC", "PREMIUM", "PKG_BASIC", "PKG_PREMIUM"]);
+
+// checkout에 전달할 packageType 매핑
+const CHECKOUT_TYPE: Record<string, string> = {
+  BASIC: "BASIC",
+  PREMIUM: "PREMIUM",
+  PKG_BASIC: "PKG_BASIC",
+  PKG_PREMIUM: "PKG_PREMIUM",
+};
+
+function getSubmitPrice(tier: TierKey, isUrgent: boolean): number {
+  const base = TIER_OPTIONS.find((t) => t.key === tier)?.price ?? 0;
+  // 긴급 추가: 단품만 (패키지 PREMIUM은 이미 포함)
+  const urgentExtra =
+    isUrgent && tier !== "FREE" && tier !== "PKG_PREMIUM"
+      ? JOB_PRICES.URGENT
+      : 0;
+  return base + urgentExtra;
+}
 
 export default function JobWritePage() {
   const { data: session } = useSession();
@@ -14,6 +88,8 @@ export default function JobWritePage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [filterWarning, setFilterWarning] = useState<string[]>([]);
+
+  const isBiz = session?.user.userType === "BIZ";
 
   const [form, setForm] = useState({
     title: "",
@@ -28,7 +104,7 @@ export default function JobWritePage() {
     description: "",
     contact: "",
     contactType: "KAKAO",
-    tier: "FREE",
+    tier: "FREE" as TierKey,
     isUrgent: false,
     agreeNoFraud: false,
     agreeNoDiscrimination: false,
@@ -65,6 +141,95 @@ export default function JobWritePage() {
     }
   };
 
+  // 유료 결제 플로우 (checkout → Toss → confirm)
+  const handlePaidSubmit = async () => {
+    const jobData = {
+      title: form.title,
+      bizName: form.bizName,
+      region: form.region,
+      subRegion: form.subRegion,
+      bizType: form.bizType,
+      salary: form.salary,
+      workHours: form.workHours,
+      requirements: form.requirements,
+      benefits: form.benefits,
+      description: form.description,
+      contact: form.contact,
+      contactType: form.contactType,
+      images: [],
+      agreeNoFraud: form.agreeNoFraud,
+      agreeNoDiscrimination: form.agreeNoDiscrimination,
+    };
+
+    // 1. Checkout — 결제 주문 생성
+    const checkoutRes = await fetch("/api/biz/package/checkout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        packageType: CHECKOUT_TYPE[form.tier],
+        jobData,
+        isUrgent: form.isUrgent,
+      }),
+    });
+
+    const checkoutData = await checkoutRes.json();
+    if (!checkoutRes.ok) {
+      setError(checkoutData.error || "결제 준비 중 오류가 발생했습니다.");
+      return;
+    }
+
+    // 2. 토스 결제 SDK (현재 테스트 모드 — 바로 confirm 호출)
+    // TODO: 실제 토스 SDK 연동 시 여기서 TossPayments.requestPayment() 호출
+    const confirmRes = await fetch("/api/biz/package/confirm", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        paymentKey: `test_${Date.now()}`,
+        orderId: checkoutData.orderId,
+        amount: checkoutData.amount,
+        jobData,
+      }),
+    });
+
+    const confirmData = await confirmRes.json();
+    if (!confirmRes.ok) {
+      setError(confirmData.error || "결제 처리 중 오류가 발생했습니다.");
+      return;
+    }
+
+    // 3. 성공 → 구인글 상세로 이동
+    const extras: string[] = [];
+    if (confirmData.seekAccessGranted) extras.push("구직글 열람권 1개월");
+    if (confirmData.isUrgent) extras.push("긴급 구인 7일");
+
+    if (extras.length > 0) {
+      alert(`결제 완료! 부가 혜택이 적용되었습니다:\n- ${extras.join("\n- ")}`);
+    }
+
+    router.push(`/jobs/${confirmData.jobId}`);
+  };
+
+  // 무료 등록 플로우 (기존)
+  const handleFreeSubmit = async () => {
+    const res = await fetch("/api/jobs", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        type: "HIRE",
+        ...form,
+        tier: "FREE",
+      }),
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      setError(data.error);
+      return;
+    }
+
+    router.push(`/jobs/${data.id}`);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -74,37 +239,30 @@ export default function JobWritePage() {
       return;
     }
 
-    // 비회원 체크
     if (!session && !form.guestEmail) {
       setError("비회원은 이메일을 입력해주세요.");
+      return;
+    }
+
+    // 패키지는 BIZ 회원만
+    if ((form.tier === "PKG_BASIC" || form.tier === "PKG_PREMIUM") && !isBiz) {
+      setError("패키지 상품은 업소 회원만 이용할 수 있습니다.");
+      return;
+    }
+
+    // 유료 결제는 BIZ 회원만
+    if (PAID_TIERS.has(form.tier) && !isBiz) {
+      setError("유료 상품은 업소 회원만 이용할 수 있습니다.");
       return;
     }
 
     setIsLoading(true);
 
     try {
-      const res = await fetch("/api/jobs", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          type: "HIRE",
-          ...form,
-        }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        setError(data.error);
-        return;
-      }
-
-      // 무료: 바로 완료, 유료: 결제 페이지로 (TODO)
-      if (form.tier === "FREE") {
-        router.push(`/jobs/${data.id}`);
+      if (PAID_TIERS.has(form.tier)) {
+        await handlePaidSubmit();
       } else {
-        // TODO: 결제 페이지
-        router.push(`/jobs/${data.id}`);
+        await handleFreeSubmit();
       }
     } catch {
       setError("등록 중 오류가 발생했습니다.");
@@ -114,6 +272,18 @@ export default function JobWritePage() {
   };
 
   const subRegions = form.region ? SUB_REGIONS[form.region] || [] : [];
+
+  // 현재 선택 tier 계산된 가격
+  const totalPrice = getSubmitPrice(form.tier, form.isUrgent);
+
+  // 긴급 옵션 표시 조건: 유료 단품(BASIC/PREMIUM)만 (패키지 PREMIUM은 이미 포함)
+  const showUrgentOption =
+    form.tier === "BASIC" || form.tier === "PREMIUM" || form.tier === "PKG_BASIC";
+
+  // 표시할 tier 목록 (BIZ가 아니면 패키지 숨김)
+  const visibleTiers = isBiz
+    ? TIER_OPTIONS
+    : TIER_OPTIONS.filter((t) => !t.bizOnly);
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-6">
@@ -233,6 +403,35 @@ export default function JobWritePage() {
                 placeholder="TC 협의, 일급 등"
                 required
               />
+              {/* 업종 평균 급여 힌트 */}
+              {(() => {
+                const guide = form.bizType ? getGuideForBizType(form.bizType) : null;
+                if (!guide) return null;
+                const sc = form.salary ? compareSalary(form.salary, form.bizType) : null;
+                return (
+                  <div className="mt-1.5 text-xs">
+                    <p className="text-gray-500">
+                      {form.bizType} 평균 일급:{" "}
+                      <span className="text-secondary font-medium">
+                        {guide.dailyMin}~{guide.dailyMax}만원
+                      </span>
+                    </p>
+                    {sc && (
+                      <p className={`mt-0.5 font-medium ${
+                        sc.level === "above"
+                          ? "text-success"
+                          : sc.level === "below"
+                            ? "text-urgent"
+                            : "text-primary-light"
+                      }`}>
+                        {sc.level === "above" && "\u25B2 "}
+                        {sc.level === "below" && "\u25BC "}
+                        입력한 급여: {sc.label}
+                      </p>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
             <div>
               <label className="block text-sm text-gray-400 mb-1">
@@ -393,38 +592,86 @@ export default function JobWritePage() {
         <div className="card space-y-4">
           <h2 className="font-bold text-sm text-gray-300">상품 선택</h2>
 
+          {/* 단품 */}
           <div className="grid grid-cols-3 gap-3">
-            {(["FREE", "BASIC", "PREMIUM"] as const).map((t) => (
-              <button
-                key={t}
-                type="button"
-                onClick={() => updateField("tier", t)}
-                className={`p-4 rounded-xl border text-center transition-all ${
-                  form.tier === t
-                    ? t === "PREMIUM"
-                      ? "border-premium-border bg-premium-border/10"
-                      : "border-primary bg-primary/10"
-                    : "border-dark-border hover:border-gray-500"
-                }`}
-              >
-                <p className="font-bold text-sm">
-                  {t === "PREMIUM" ? "프리미엄" : t === "BASIC" ? "기본" : "무료"}
-                </p>
-                <p className="text-xs text-secondary mt-1">
-                  {formatPriceWithUnit(JOB_PRICES[t])}
-                </p>
-                <p className="text-xs text-gray-500 mt-1">
-                  {t === "PREMIUM"
-                    ? "상단고정 · 사진5장"
-                    : t === "BASIC"
-                      ? "일반노출 · 사진3장"
-                      : "최하단 · 사진불가"}
-                </p>
-              </button>
-            ))}
+            {visibleTiers
+              .filter((t) => !t.bizOnly)
+              .map((t) => (
+                <button
+                  key={t.key}
+                  type="button"
+                  onClick={() => {
+                    updateField("tier", t.key);
+                    if (t.key === "FREE") updateField("isUrgent", false);
+                  }}
+                  className={`p-4 rounded-xl border text-center transition-all ${
+                    form.tier === t.key
+                      ? t.borderClass
+                      : "border-dark-border hover:border-gray-500"
+                  }`}
+                >
+                  <p className="font-bold text-sm">{t.label}</p>
+                  <p className="text-xs text-secondary mt-1">
+                    {formatPriceWithUnit(t.price)}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">{t.desc}</p>
+                </button>
+              ))}
           </div>
 
-          {form.tier !== "FREE" && (
+          {/* 패키지 (BIZ만) */}
+          {isBiz && (
+            <>
+              <div className="flex items-center gap-2 mt-2">
+                <div className="flex-1 h-px bg-dark-border" />
+                <span className="text-xs text-gray-500 px-2">패키지 상품</span>
+                <div className="flex-1 h-px bg-dark-border" />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                {visibleTiers
+                  .filter((t) => t.bizOnly)
+                  .map((t) => (
+                    <button
+                      key={t.key}
+                      type="button"
+                      onClick={() => {
+                        updateField("tier", t.key);
+                        // PKG_PREMIUM은 긴급 자동 포함
+                        if (t.key === "PKG_PREMIUM") updateField("isUrgent", false);
+                      }}
+                      className={`p-4 rounded-xl border text-left transition-all ${
+                        form.tier === t.key
+                          ? t.borderClass
+                          : "border-dark-border hover:border-gray-500"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <p className="font-bold text-sm">{t.label}</p>
+                        <span className="text-xs bg-secondary/20 text-secondary px-2 py-0.5 rounded">
+                          할인
+                        </span>
+                      </div>
+                      <p className="text-lg font-bold text-secondary">
+                        {formatPriceWithUnit(t.price)}
+                      </p>
+                      {t.benefits && (
+                        <ul className="mt-2 space-y-1">
+                          {t.benefits.map((b, i) => (
+                            <li key={i} className="text-xs text-gray-400 flex items-center gap-1">
+                              <span className="text-secondary">&#10003;</span> {b}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </button>
+                  ))}
+              </div>
+            </>
+          )}
+
+          {/* 긴급 옵션 (단품 BASIC/PREMIUM, PKG_BASIC에서만) */}
+          {showUrgentOption && (
             <label className="flex items-center gap-2 cursor-pointer">
               <input
                 type="checkbox"
@@ -436,6 +683,13 @@ export default function JobWritePage() {
                 긴급 구인 추가 (+{formatPriceWithUnit(JOB_PRICES.URGENT)}, 7일)
               </span>
             </label>
+          )}
+
+          {/* PKG_PREMIUM 안내 */}
+          {form.tier === "PKG_PREMIUM" && (
+            <p className="text-xs text-gray-500 bg-premium-border/10 rounded-lg px-3 py-2">
+              프리미엄패키지에는 긴급 구인(7일)이 이미 포함되어 있습니다.
+            </p>
           )}
         </div>
 
@@ -489,13 +743,10 @@ export default function JobWritePage() {
             className="btn-primary flex-1 py-3 disabled:opacity-50"
           >
             {isLoading
-              ? "등록 중..."
+              ? "처리 중..."
               : form.tier === "FREE"
                 ? "무료로 등록"
-                : `${formatPriceWithUnit(
-                    JOB_PRICES[form.tier as keyof typeof JOB_PRICES] +
-                      (form.isUrgent ? JOB_PRICES.URGENT : 0)
-                  )} 결제하고 등록`}
+                : `${formatPriceWithUnit(totalPrice)} 결제하고 등록`}
           </button>
         </div>
       </form>

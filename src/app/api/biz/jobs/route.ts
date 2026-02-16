@@ -53,6 +53,8 @@ export async function GET(req: NextRequest) {
           isActive: true,
           viewCount: true,
           contactClickCount: true,
+          lastBumpedAt: true,
+          bumpCount: true,
           createdAt: true,
           updatedAt: true,
         },

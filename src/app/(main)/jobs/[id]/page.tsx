@@ -3,6 +3,9 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/session";
 import { formatPriceWithUnit } from "@/lib/pricing";
+import JobBookmarkButton from "@/components/job/JobBookmarkButton";
+import { compareSalary } from "@/lib/salary-guide";
+import SalaryTag from "@/components/job/SalaryTag";
 
 interface Props {
   params: { id: string };
@@ -48,6 +51,19 @@ export default async function JobDetailPage({ params }: Props) {
         ? "BASIC"
         : "FREE";
 
+  // 스크랩 상태 조회
+  let isBookmarked = false;
+  if (user?.id) {
+    const bookmark = await prisma.bookmark.findUnique({
+      where: { userId_jobId: { userId: user.id, jobId: job.id } },
+    });
+    isBookmarked = !!bookmark;
+  }
+
+  // 급여 비교
+  const salaryComparison =
+    job.type === "HIRE" ? compareSalary(job.salary, job.bizType) : null;
+
   return (
     <div className="max-w-3xl mx-auto px-4 py-6">
       {/* 뱃지 */}
@@ -59,13 +75,25 @@ export default async function JobDetailPage({ params }: Props) {
         {job.bizUser?.isVerifiedBiz && (
           <span className="badge-verified">인증업소</span>
         )}
+        {job.bizUser?.isRecommended && (
+          <span className="badge-recommended">추천업소</span>
+        )}
         <span className="text-xs text-gray-500">{tierLabel}</span>
       </div>
 
-      {/* 제목 */}
-      <h1 className="text-2xl font-bold mb-2">{job.title}</h1>
+      {/* 제목 + 스크랩 */}
+      <div className="flex items-start justify-between gap-3 mb-2">
+        <h1 className="text-2xl font-bold">{job.title}</h1>
+        {user && (user.userType === "USER" || user.userType === "BIZ") && (
+          <JobBookmarkButton
+            jobId={job.id}
+            initialBookmarked={isBookmarked}
+            initialScrapCount={job.scrapCount}
+          />
+        )}
+      </div>
       <p className="text-gray-400 text-sm mb-6">
-        조회 {job.viewCount + 1} ·{" "}
+        조회 {job.viewCount + 1} · 스크랩 {job.scrapCount} ·{" "}
         {new Date(job.createdAt).toLocaleDateString("ko-KR")}
       </p>
 
@@ -115,8 +143,20 @@ export default async function JobDetailPage({ params }: Props) {
               </div>
               {job.salary && (
                 <div>
-                  <dt className="text-gray-500">급여</dt>
-                  <dd className="text-secondary font-medium">{job.salary}</dd>
+                  <dt className="text-gray-500 flex items-center gap-1.5">
+                    급여
+                    {salaryComparison && (
+                      <SalaryTag level={salaryComparison.level} label={salaryComparison.label} />
+                    )}
+                  </dt>
+                  <dd className="text-secondary font-medium">
+                    {job.salary}
+                    {salaryComparison && (
+                      <span className="text-xs text-gray-500 font-normal ml-2">
+                        ({job.bizType} 평균 일급 {salaryComparison.guideMin}~{salaryComparison.guideMax}만원)
+                      </span>
+                    )}
+                  </dd>
                 </div>
               )}
               {job.workHours && (

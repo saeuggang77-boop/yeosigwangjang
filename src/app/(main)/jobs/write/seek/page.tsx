@@ -4,7 +4,8 @@ import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { REGIONS, BIZ_TYPES, EXPERIENCE_OPTIONS } from "@/lib/constants";
+import { REGIONS, BIZ_TYPES, EXPERIENCE_OPTIONS, CONTACT_TYPES } from "@/lib/constants";
+import { getGuideForBizType } from "@/lib/salary-guide";
 
 export default function SeekWritePage() {
   const { data: session } = useSession();
@@ -20,6 +21,7 @@ export default function SeekWritePage() {
     desiredCondition: "",
     description: "",
     contact: "",
+    contactType: "KAKAO",
   });
 
   const updateField = (field: string, value: unknown) => {
@@ -65,7 +67,7 @@ export default function SeekWritePage() {
           bizType: form.desiredBizTypes[0],
           description: form.description,
           contact: form.contact,
-          contactType: "KAKAO",
+          contactType: form.contactType,
           desiredRegions: form.desiredRegions,
           desiredBizTypes: form.desiredBizTypes,
           experience: form.experience,
@@ -207,6 +209,36 @@ export default function SeekWritePage() {
                 선택: {form.desiredBizTypes.join(", ")}
               </p>
             )}
+
+            {/* 선택 업종별 급여 가이드 */}
+            {form.desiredBizTypes.length > 0 && (
+              <div className="mt-3 space-y-1.5">
+                <p className="text-xs text-gray-500">선택 업종 평균 급여 (일급 기준)</p>
+                <div className="flex flex-wrap gap-2">
+                  {form.desiredBizTypes.map((bt) => {
+                    const guide = getGuideForBizType(bt);
+                    if (!guide) return null;
+                    return (
+                      <span
+                        key={bt}
+                        className="text-xs bg-dark-card border border-dark-border rounded-lg px-2.5 py-1.5"
+                      >
+                        <span className="text-gray-400">{bt}</span>{" "}
+                        <span className="text-secondary font-medium">
+                          {guide.dailyMin}~{guide.dailyMax}만원
+                        </span>
+                      </span>
+                    );
+                  })}
+                </div>
+                <Link
+                  href="/jobs/salary-guide"
+                  className="text-[10px] text-gray-600 hover:text-primary-light transition-colors"
+                >
+                  전체 급여 가이드 보기 &rarr;
+                </Link>
+              </div>
+            )}
           </div>
 
           <div>
@@ -257,22 +289,38 @@ export default function SeekWritePage() {
             />
           </div>
 
-          <div>
-            <label className="block text-sm text-gray-400 mb-1">
-              카카오톡 ID <span className="text-urgent">*</span>
-            </label>
-            <input
-              type="text"
-              value={form.contact}
-              onChange={(e) => updateField("contact", e.target.value)}
-              className="input-field"
-              placeholder="카카오톡 ID"
-              required
-            />
-            <p className="text-xs text-gray-600 mt-1">
-              열람권을 구매한 업소만 확인할 수 있습니다.
-            </p>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm text-gray-400 mb-1">
+                연락처 <span className="text-urgent">*</span>
+              </label>
+              <input
+                type="text"
+                value={form.contact}
+                onChange={(e) => updateField("contact", e.target.value)}
+                className="input-field"
+                placeholder={form.contactType === "PHONE" ? "010-0000-0000" : "카카오톡 ID"}
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-gray-400 mb-1">
+                연락 방법 <span className="text-urgent">*</span>
+              </label>
+              <select
+                value={form.contactType}
+                onChange={(e) => updateField("contactType", e.target.value)}
+                className="input-field"
+              >
+                {CONTACT_TYPES.map((c) => (
+                  <option key={c.value} value={c.value}>{c.label}</option>
+                ))}
+              </select>
+            </div>
           </div>
+          <p className="text-xs text-gray-600">
+            열람권을 구매한 업소만 확인할 수 있습니다.
+          </p>
         </div>
 
         {/* ─── 안내 ─── */}

@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 
+const BUMP_PRICE = 10_000;
+
 interface MyJob {
   id: string;
   type: string;
@@ -17,6 +19,8 @@ interface MyJob {
   isActive: boolean;
   viewCount: number;
   contactClickCount: number;
+  lastBumpedAt: string | null;
+  bumpCount: number;
   createdAt: string;
 }
 
@@ -27,6 +31,7 @@ export default function BizJobsPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [bumpModal, setBumpModal] = useState<MyJob | null>(null);
 
   const fetchJobs = useCallback(async () => {
     setIsLoading(true);
@@ -62,6 +67,50 @@ export default function BizJobsPage() {
     }
   };
 
+  const handleBump = async (job: MyJob) => {
+    setActionLoading(`bump-${job.id}`);
+    try {
+      // 1. 결제 주문 생성
+      const checkoutRes = await fetch("/api/biz/bump/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ jobId: job.id }),
+      });
+
+      const checkoutData = await checkoutRes.json();
+      if (!checkoutRes.ok) {
+        alert(checkoutData.error || "끌올 준비 중 오류가 발생했습니다.");
+        return;
+      }
+
+      // 2. 토스 결제 SDK가 설정되어 있으면 SDK 호출
+      //    현재는 테스트용으로 바로 confirm 호출
+      const confirmRes = await fetch("/api/biz/bump/confirm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          paymentKey: `test_${Date.now()}`,
+          orderId: checkoutData.orderId,
+          amount: checkoutData.amount,
+          jobId: job.id,
+        }),
+      });
+
+      const confirmData = await confirmRes.json();
+      if (confirmRes.ok) {
+        alert("끌올이 완료되었습니다! 구인글이 목록 상단으로 이동합니다.");
+        setBumpModal(null);
+        fetchJobs();
+      } else {
+        alert(confirmData.error || "끌올 처리 중 오류가 발생했습니다.");
+      }
+    } catch {
+      alert("끌올 처리 중 오류가 발생했습니다.");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   const tierLabel = (tier: string) => {
     switch (tier) {
       case "PREMIUM":
@@ -71,6 +120,16 @@ export default function BizJobsPage() {
       default:
         return <span className="text-gray-500">무료</span>;
     }
+  };
+
+  const formatTimeAgo = (dateStr: string) => {
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const minutes = Math.floor(diff / 60000);
+    if (minutes < 60) return `${minutes}분 전`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}시간 전`;
+    const days = Math.floor(hours / 24);
+    return `${days}일 전`;
   };
 
   return (
@@ -141,6 +200,11 @@ export default function BizJobsPage() {
                         긴급
                       </span>
                     )}
+                    {job.lastBumpedAt && (
+                      <span className="text-xs text-primary bg-primary/10 px-2 py-0.5 rounded">
+                        끌올 {formatTimeAgo(job.lastBumpedAt)}
+                      </span>
+                    )}
                     {!job.isActive && (
                       <span className="text-xs text-gray-500 bg-dark-border px-2 py-0.5 rounded">
                         종료
@@ -157,6 +221,9 @@ export default function BizJobsPage() {
                   <p className="text-xs text-gray-500 mt-1">
                     {job.region} &middot; {job.bizType} &middot;{" "}
                     {new Date(job.createdAt).toLocaleDateString("ko-KR")}
+                    {job.bumpCount > 0 && (
+                      <> &middot; 끌올 {job.bumpCount}회</>
+                    )}
                   </p>
 
                   {/* 통계 */}
@@ -174,6 +241,15 @@ export default function BizJobsPage() {
 
                 {/* 액션 버튼 */}
                 <div className="flex gap-2 shrink-0">
+                  {job.isActive && job.tier !== "FREE" && (
+                    <button
+                      onClick={() => setBumpModal(job)}
+                      disabled={actionLoading === `bump-${job.id}`}
+                      className="text-xs text-primary hover:text-white px-2 py-1 rounded border border-primary/30 hover:border-primary hover:bg-primary/10 transition-colors disabled:opacity-50"
+                    >
+                      {actionLoading === `bump-${job.id}` ? "..." : "끌올"}
+                    </button>
+                  )}
                   {job.isActive && (
                     <Link
                       href={`/jobs/${job.id}`}
@@ -214,6 +290,49 @@ export default function BizJobsPage() {
               {p}
             </button>
           ))}
+        </div>
+      )}
+
+      {/* 끌올 확인 모달 */}
+      {bumpModal && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="card max-w-sm w-full">
+            <h3 className="text-lg font-bold mb-2">구인글 끌올</h3>
+            <p className="text-sm text-gray-400 mb-4">
+              &quot;{bumpModal.title}&quot; 구인글을 목록 상단으로 올리시겠습니까?
+            </p>
+            <div className="bg-dark-bg rounded-lg p-4 mb-4">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-400">끌올 비용</span>
+                <span className="text-lg font-bold text-primary">
+                  ₩{BUMP_PRICE.toLocaleString()}
+                </span>
+              </div>
+              {bumpModal.bumpCount > 0 && (
+                <p className="text-xs text-gray-500 mt-2">
+                  이전 끌올: {bumpModal.bumpCount}회
+                  {bumpModal.lastBumpedAt && (
+                    <> (마지막: {formatTimeAgo(bumpModal.lastBumpedAt)})</>
+                  )}
+                </p>
+              )}
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setBumpModal(null)}
+                className="flex-1 py-2.5 rounded-lg text-sm font-medium bg-dark-border text-gray-300 hover:bg-dark-card transition-colors"
+              >
+                취소
+              </button>
+              <button
+                onClick={() => handleBump(bumpModal)}
+                disabled={actionLoading === `bump-${bumpModal.id}`}
+                className="flex-1 py-2.5 rounded-lg text-sm font-medium bg-primary text-white hover:bg-primary-dark transition-colors disabled:opacity-50"
+              >
+                {actionLoading === `bump-${bumpModal.id}` ? "처리 중..." : "결제하고 끌올"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

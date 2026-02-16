@@ -82,6 +82,10 @@
     @apply inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-success/20 text-success;
   }
 
+  .badge-recommended {
+    @apply inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-accent/20 text-accent;
+  }
+
   /* 블러 처리 (구직글 열람권 미구매) */
   .blur-content {
     @apply blur-md select-none pointer-events-none;

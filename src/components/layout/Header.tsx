@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
+import NotificationBell from "@/components/notification/NotificationBell";
 
 const NAV_ITEMS = [
   { href: "/jobs", label: "구인구직" },
@@ -72,6 +73,10 @@ export default function Header() {
                 >
                   구인등록
                 </Link>
+                {/* 알림 벨 (일반 회원 + 관리자) */}
+                {(session.user.userType === "USER" || session.user.role === "ADMIN") && (
+                  <NotificationBell />
+                )}
                 <div className="relative group">
                   <button className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-sm text-gray-300 hover:text-white hover:bg-dark-surface transition-colors">
                     <div className="w-7 h-7 rounded-full bg-primary/30 flex items-center justify-center text-xs text-primary-light font-bold">

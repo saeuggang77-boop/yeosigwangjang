@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { createNotifications } from "@/lib/notifications";
 
 // POST /api/ad-inquiry — 광고/입점 문의 접수
 export async function POST(req: NextRequest) {
@@ -14,8 +15,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Notification 테이블에 관리자 알림으로 저장
-    // 관리자(ADMIN) 유저 찾기
+    // 관리자(ADMIN) 유저에게 알림
     const admins = await prisma.user.findMany({
       where: { role: "ADMIN" },
       select: { id: true },
@@ -23,17 +23,12 @@ export async function POST(req: NextRequest) {
 
     const inquiryText = `[광고문의] ${bizName} (${category})\n담당자: ${name}\n연락처: ${phone}${email ? `\n이메일: ${email}` : ""}\n내용: ${message}`;
 
-    // 모든 관리자에게 알림
-    if (admins.length > 0) {
-      await prisma.notification.createMany({
-        data: admins.map((admin) => ({
-          userId: admin.id,
-          type: "AD_INQUIRY",
-          message: inquiryText,
-          link: "/admin",
-        })),
-      });
-    }
+    await createNotifications(
+      admins.map((a) => a.id),
+      "AD_INQUIRY",
+      inquiryText,
+      "/admin"
+    );
 
     return NextResponse.json(
       { message: "문의가 접수되었습니다. 빠른 시일 내에 연락드리겠습니다." },

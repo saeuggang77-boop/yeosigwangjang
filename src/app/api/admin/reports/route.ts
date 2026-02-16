@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { notifyReportResolved } from "@/lib/notifications";
 
 async function requireAdmin() {
   const session = await getServerSession(authOptions);
@@ -88,14 +89,21 @@ export async function PATCH(req: NextRequest) {
         });
       }
 
+      // 신고자에게 처리 결과 알림
+      notifyReportResolved(report.reporterId, "RESOLVED");
+
       return NextResponse.json({ message: "신고가 처리되었습니다." });
     }
 
     if (action === "dismiss") {
-      await prisma.report.update({
+      const report = await prisma.report.update({
         where: { id: reportId },
         data: { status: "DISMISSED" },
       });
+
+      // 신고자에게 기각 알림
+      notifyReportResolved(report.reporterId, "DISMISSED");
+
       return NextResponse.json({ message: "신고가 기각되었습니다." });
     }
 
