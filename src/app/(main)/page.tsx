@@ -220,10 +220,10 @@ const SEEK_DUMMY = [
 ];
 
 const RECOMMENDED_BIZ = [
-  { id: "ad1", name: "OO성형외과", category: "성형/피부", region: "강남", desc: "여시 전용 할인 이벤트" },
-  { id: "ad2", name: "OO헤어살롱", category: "헤어/메이크업", region: "청담", desc: "출근 전 헤어 세팅 30% 할인" },
-  { id: "ad3", name: "OO네일아트", category: "네일/뷰티", region: "강남", desc: "여시 회원 20% 상시 할인" },
-  { id: "ad4", name: "OO세무회계", category: "세무/법률", region: "강남", desc: "종합소득세 무료 상담" },
+  { id: "ad1", name: "OO성형외과", category: "성형/피부", region: "강남", desc: "여시 전용 할인 이벤트", icon: "💉", color: "from-rose-500/30 to-pink-600/20" },
+  { id: "ad2", name: "OO헤어살롱", category: "헤어/메이크업", region: "청담", desc: "출근 전 헤어 세팅 30% 할인", icon: "✂️", color: "from-amber-500/30 to-orange-600/20" },
+  { id: "ad3", name: "OO네일아트", category: "네일/뷰티", region: "강남", desc: "여시 회원 20% 상시 할인", icon: "💅", color: "from-fuchsia-500/30 to-purple-600/20" },
+  { id: "ad4", name: "OO세무회계", category: "세무/법률", region: "강남", desc: "종합소득세 무료 상담", icon: "📊", color: "from-blue-500/30 to-indigo-600/20" },
 ];
 
 // ==========================================
@@ -239,12 +239,25 @@ export default function HomePage() {
       {/* ── 지역별 바로가기 ── */}
       <section>
         <h2 className="text-lg font-bold mb-3">지역별 구인</h2>
-        <div className="flex flex-wrap gap-2">
-          {["서울","부산","인천","경기","경남","대구","경북","광주","전남","전북","대전","충남","충북","강원","제주","울산"].map((r) => (
+        {/* 인기 지역 */}
+        <div className="flex flex-wrap gap-2 mb-2">
+          {["서울","부산","인천","경기"].map((r) => (
             <Link
               key={r}
               href={`/jobs?region=${encodeURIComponent(r)}`}
-              className="px-4 py-2 rounded-full text-sm font-medium bg-dark-card text-gray-400 hover:text-white hover:bg-primary/20 transition-colors"
+              className="px-5 py-2.5 rounded-full text-sm font-bold bg-primary/20 text-primary-light border border-primary/30 hover:bg-primary/30 transition-colors"
+            >
+              {r}
+            </Link>
+          ))}
+        </div>
+        {/* 기타 지역 */}
+        <div className="flex flex-wrap gap-1.5">
+          {["경남","대구","경북","광주","전남","전북","대전","충남","충북","강원","제주","울산"].map((r) => (
+            <Link
+              key={r}
+              href={`/jobs?region=${encodeURIComponent(r)}`}
+              className="px-3 py-1.5 rounded-full text-xs font-medium bg-dark-card text-gray-500 hover:text-white hover:bg-primary/20 transition-colors"
             >
               {r}
             </Link>
@@ -278,7 +291,43 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── 4. 최신 구인 (기본 + 무료) ── */}
+      {/* ── 4. 추천 업체 ── */}
+      <section>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-bold">추천 업체</h2>
+          <Link
+            href="/directory"
+            className="text-sm text-primary-light hover:underline"
+          >
+            업체 전체보기 &rarr;
+          </Link>
+        </div>
+        <div className="flex gap-4 overflow-x-auto pb-3 -mx-4 px-4 snap-x scrollbar-hide">
+          {RECOMMENDED_BIZ.map((biz) => (
+            <Link
+              key={biz.id}
+              href={`/directory/${biz.id}`}
+              className="min-w-[200px] sm:min-w-[220px] snap-start shrink-0"
+            >
+              <div className="card hover:border-secondary/50 transition-all h-full">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className={`w-12 h-12 rounded-full bg-gradient-to-br ${biz.color} flex items-center justify-center shrink-0`}>
+                    <span className="text-xl">{biz.icon}</span>
+                  </div>
+                  <div className="min-w-0">
+                    <h3 className="font-bold text-sm truncate">{biz.name}</h3>
+                    <span className="text-xs text-secondary">{biz.category}</span>
+                  </div>
+                </div>
+                <p className="text-xs text-gray-400">{biz.region}</p>
+                <p className="text-xs text-accent mt-1.5">{biz.desc}</p>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      {/* ── 4. 최신 구인 (기본 + 라이트) ── */}
       <section>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-bold">최신 구인</h2>
@@ -307,7 +356,7 @@ export default function HomePage() {
 
       {/* ── 5. 여시광장 (카페 섹션) ── */}
       <section>
-        <div className="card bg-gradient-to-br from-dark-surface to-dark-card border-primary/20">
+        <div className="bg-dark-surface/80 border border-gray-700/60 rounded-2xl p-6 shadow-lg">
           <div className="flex items-center justify-between mb-5">
             <div>
               <h2 className="text-lg font-bold text-primary-light">
@@ -415,39 +464,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── 7. 추천 업체 (광고업체 카드 슬라이더) ── */}
-      <section>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-bold">추천 업체</h2>
-          <Link
-            href="/directory"
-            className="text-sm text-primary-light hover:underline"
-          >
-            업체 전체보기 &rarr;
-          </Link>
-        </div>
-        <div className="flex gap-4 overflow-x-auto pb-3 -mx-4 px-4 snap-x scrollbar-hide">
-          {RECOMMENDED_BIZ.map((biz) => (
-            <Link
-              key={biz.id}
-              href={`/directory/${biz.id}`}
-              className="min-w-[200px] sm:min-w-[220px] snap-start shrink-0"
-            >
-              <div className="card hover:border-secondary/50 transition-all h-full">
-                <div className="w-full h-20 rounded-lg bg-gradient-to-br from-secondary/10 to-dark-card mb-3 flex items-center justify-center">
-                  <span className="text-2xl font-bold text-secondary/30">
-                    {biz.name[0]}
-                  </span>
-                </div>
-                <span className="text-xs text-secondary">{biz.category}</span>
-                <h3 className="font-bold text-sm mt-1">{biz.name}</h3>
-                <p className="text-xs text-gray-400 mt-0.5">{biz.region}</p>
-                <p className="text-xs text-accent mt-2">{biz.desc}</p>
-              </div>
-            </Link>
-          ))}
-        </div>
-      </section>
     </div>
   );
 }

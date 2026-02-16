@@ -49,16 +49,19 @@ export default function MainBanner() {
   if (loaded && ads.length === 0) {
     return (
       <section>
-        <div className="relative w-full h-44 sm:h-56 rounded-2xl overflow-hidden bg-gradient-to-r from-primary/30 via-dark-surface to-premium-border/20 border border-dark-border">
+        <div className="relative w-full h-44 sm:h-56 rounded-2xl overflow-hidden bg-gradient-to-r from-purple-600/40 via-primary/30 to-pink-500/40 border border-primary/20">
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-premium-gold/10 via-transparent to-transparent" />
           <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
-            <p className="text-xs text-gray-500 mb-2">AD</p>
             <h2 className="text-xl sm:text-2xl font-bold mb-1">
               여시광장에서 만나는{" "}
               <span className="text-premium-gold">프리미엄</span> 파트너
             </h2>
-            <p className="text-sm text-gray-400">
+            <p className="text-sm text-gray-300 mb-4">
               성형 · 뷰티 · 헤어 — 여시 전용 혜택
             </p>
+            <a href="/directory" className="btn-primary text-sm py-2 px-5">
+              업체 보러가기 &rarr;
+            </a>
           </div>
         </div>
       </section>
@@ -97,21 +100,19 @@ export default function MainBanner() {
             href={ad.bannerLink || "#"}
             target={ad.bannerLink ? "_blank" : undefined}
             rel="noopener noreferrer"
-            className="block w-full h-full bg-gradient-to-r from-primary/30 via-dark-surface to-premium-border/20"
+            className="block w-full h-full bg-gradient-to-r from-purple-600/40 via-primary/30 to-pink-500/40"
           >
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-premium-gold/10 via-transparent to-transparent" />
             <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
-              <p className="text-xs text-gray-500 mb-2">AD</p>
-              <h2 className="text-xl sm:text-2xl font-bold mb-1">
+              <h2 className="text-xl sm:text-2xl font-bold mb-2">
                 {ad.business.name}
               </h2>
+              <a href={ad.bannerLink || `/directory`} className="btn-primary text-sm py-2 px-5">
+                업체 보러가기 &rarr;
+              </a>
             </div>
           </a>
         )}
-
-        {/* AD 라벨 */}
-        <span className="absolute top-3 left-3 text-[10px] text-gray-500 bg-dark-bg/60 px-1.5 py-0.5 rounded">
-          AD
-        </span>
 
         {/* 좌우 화살표 (2개 이상일 때) */}
         {ads.length > 1 && (

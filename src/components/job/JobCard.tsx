@@ -2,6 +2,29 @@ import Link from "next/link";
 import { compareSalary } from "@/lib/salary-guide";
 import SalaryTag from "@/components/job/SalaryTag";
 
+// 업종별 아이콘 & 그라데이션 매핑
+function getBizIcon(bizType: string): string {
+  const map: Record<string, string> = {
+    "클럽": "🎵", "라운지": "🍸", "룸싸롱": "🎤", "텐프로": "🎤",
+    "바": "🍸", "퍼브": "🍺", "착석바": "🍷", "노래주점": "🎵",
+    "가라오케": "🎶", "마사지": "💆‍♀️", "스파": "💆‍♀️",
+    "헤어": "✂️", "네일": "💅", "뷰티": "💄", "성형": "💉", "피부과": "✨",
+  };
+  for (const [key, icon] of Object.entries(map)) {
+    if (bizType.includes(key)) return icon;
+  }
+  return "✨";
+}
+
+function getBizGradient(bizType: string): string {
+  if (bizType.includes("클럽") || bizType.includes("텐프로")) return "from-purple-600/30 to-pink-500/20";
+  if (bizType.includes("라운지") || bizType.includes("바") || bizType.includes("착석")) return "from-blue-600/30 to-indigo-500/20";
+  if (bizType.includes("룸싸롱")) return "from-rose-600/30 to-amber-500/20";
+  if (bizType.includes("노래") || bizType.includes("가라오케")) return "from-violet-600/30 to-fuchsia-500/20";
+  if (bizType.includes("마사지") || bizType.includes("스파")) return "from-teal-600/30 to-cyan-500/20";
+  return "from-primary/30 to-secondary/20";
+}
+
 export interface JobCardData {
   id: string;
   title: string;
@@ -61,30 +84,10 @@ export function JobCardPremium({ job }: { job: JobCardData }) {
   return (
     <Link href={`/jobs/${job.id}`} className="block">
       <div className="card-premium group hover:shadow-premium-border/20 hover:shadow-xl transition-all min-w-[260px] sm:min-w-[280px] snap-start shrink-0">
-        {/* 썸네일 영역 */}
-        {job.images && job.images.length > 0 ? (
-          <div className="w-full h-36 rounded-lg bg-dark-card mb-3 overflow-hidden">
-            <div className="w-full h-full bg-gradient-to-br from-premium-border/20 to-premium-gold/10 flex items-center justify-center">
-              <span className="text-xs text-gray-500">이미지</span>
-            </div>
-          </div>
-        ) : (
-          <div className="w-full h-36 rounded-lg bg-gradient-to-br from-premium-border/20 to-premium-gold/10 mb-3 flex items-center justify-center">
-            <svg
-              className="w-8 h-8 text-premium-border/40"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.5}
-                d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z"
-              />
-            </svg>
-          </div>
-        )}
+        {/* 썸네일 영역 — 업종별 그라데이션 + 아이콘 */}
+        <div className={`w-full h-36 rounded-lg bg-gradient-to-br ${getBizGradient(job.bizType)} mb-3 flex items-center justify-center border border-premium-border/10`}>
+          <span className="text-4xl">{getBizIcon(job.bizType)}</span>
+        </div>
 
         <div className="flex items-center gap-2 mb-2 flex-wrap">
           <span className="badge-premium">PREMIUM</span>
@@ -160,13 +163,14 @@ export function JobCardLight({ job }: { job: JobCardData }) {
         <h3 className="font-medium text-sm text-gray-300 mb-1 group-hover:text-white transition-colors">
           {job.title}
         </h3>
-        <p className="text-xs text-gray-500">
+        <p className="text-xs text-gray-400">{job.bizName}</p>
+        <p className="text-xs text-gray-500 mt-0.5">
           {job.region}
           {job.subRegion && ` ${job.subRegion}`} · {job.bizType}
         </p>
-        {job.salary && (
-          <p className="text-xs text-gray-500 mt-1">{job.salary}</p>
-        )}
+        <p className="text-xs text-gray-500 mt-1">
+          {job.salary || "급여 협의"}
+        </p>
       </div>
     </Link>
   );

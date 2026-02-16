@@ -6,7 +6,8 @@ import { useSession, signOut } from "next-auth/react";
 import NotificationBell from "@/components/notification/NotificationBell";
 
 const NAV_ITEMS = [
-  { href: "/jobs", label: "구인구직" },
+  { href: "/jobs", label: "구인" },
+  { href: "/jobs?type=seek", label: "구직" },
   { href: "/directory", label: "업체" },
   { href: "/market", label: "장터" },
   { href: "/community", label: "여시광장" },
