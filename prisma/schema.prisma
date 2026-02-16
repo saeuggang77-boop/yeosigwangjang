@@ -1,0 +1,452 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==========================================
+// 회원 (종사자)
+// ==========================================
+model User {
+  id           String    @id @default(cuid())
+  email        String?   @unique
+  kakaoId      String?   @unique
+  naverId      String?   @unique
+  googleId     String?   @unique
+  appleId      String?   @unique
+  phone        String?   @unique
+  nickname     String    @unique
+  profileImage String?
+  role         UserRole  @default(MEMBER)
+  grade        UserGrade @default(ASSOCIATE)
+  isVerified   Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  posts         Post[]
+  comments      Comment[]
+  likes         Like[]
+  bookmarks     Bookmark[]
+  reports       Report[]       @relation("Reporter")
+  notifications Notification[]
+  jobSeeks      Job[]          @relation("JobAuthor")
+}
+
+enum UserRole {
+  MEMBER
+  STAFF
+  ADMIN
+}
+
+enum UserGrade {
+  ASSOCIATE // 준회원
+  REGULAR   // 정회원
+}
+
+// ==========================================
+// 업소 회원 (구인자)
+// ==========================================
+model BizUser {
+  id              String    @id @default(cuid())
+  email           String    @unique
+  password        String
+  bizName         String
+  region          String
+  phone           String
+  hasSeekAccess   Boolean   @default(false)
+  seekAccessUntil DateTime?
+  isVerifiedBiz   Boolean   @default(false)
+  isRecommended   Boolean   @default(false)
+  bizRegNumber    String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  jobs     Job[]     @relation("BizUserJobs")
+  payments Payment[] @relation("BizUserPayments")
+}
+
+// ==========================================
+// 광고 업체 회원
+// ==========================================
+model AdUser {
+  id              String   @id @default(cuid())
+  email           String   @unique
+  password        String
+  bizRegNumber    String   @unique
+  representName   String
+  phone           String
+  isApproved      Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  businesses Business[]
+  payments   Payment[] @relation("AdUserPayments")
+}
+
+// ==========================================
+// 구인구직 (핵심)
+// ==========================================
+model Job {
+  id               String      @id @default(cuid())
+  type             JobType
+  tier             JobTier     @default(FREE)
+  title            String
+  bizName          String?
+  region           String
+  subRegion        String?
+  bizType          String
+  salary           String?
+  workHours        String?
+  requirements     String?     @db.Text
+  benefits         String[]
+  description      String      @db.Text
+  contact          String
+  contactType      ContactType @default(KAKAO)
+  images           String[]
+  isUrgent         Boolean     @default(false)
+  urgentUntil      DateTime?
+  lastBumpedAt     DateTime?
+  bumpCount        Int         @default(0)
+  scrapCount       Int         @default(0)
+  expiresAt        DateTime?
+  isActive         Boolean     @default(true)
+  viewCount        Int         @default(0)
+  contactClickCount Int        @default(0)
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  // [v6 추가] 구직글 전용 필드 (복수 선택)
+  desiredRegions   String[]    // 희망 지역
+  desiredBizTypes  String[]    // 희망 업종
+  experience       String?     // 경력
+  desiredCondition String?     // 희망 조건
+
+  authorUserId String?
+  authorUser   User?    @relation("JobAuthor", fields: [authorUserId], references: [id])
+  bizUserId    String?
+  bizUser      BizUser? @relation("BizUserJobs", fields: [bizUserId], references: [id])
+
+  guestEmail String?
+  guestPhone String?
+  guestToken String?  @unique
+
+  paymentId String?  @unique
+  payment   Payment? @relation(fields: [paymentId], references: [id])
+
+  // [v6 수정] 누락된 관계 추가
+  bookmarks Bookmark[]
+  reports   Report[]
+}
+
+enum JobType {
+  HIRE
+  SEEK
+}
+
+enum JobTier {
+  FREE
+  BASIC
+  PREMIUM
+}
+
+enum ContactType {
+  PHONE
+  KAKAO
+  BOTH
+}
+
+// ==========================================
+// 업체 디렉토리 (부가) — 리뷰 없음
+// ==========================================
+model Business {
+  id            String      @id @default(cuid())
+  name          String
+  slug          String      @unique
+  category      BizCategory
+  priceTier     PriceTier   @default(C)
+  description   String?     @db.Text
+  logo          String?
+  images        String[]
+  phone         String?
+  kakaoId       String?
+  instagram     String?
+  website       String?
+  address       String?
+  addressDetail String?
+  region        String?
+  subRegion     String?
+  latitude      Float?
+  longitude     Float?
+  openingHours  String?
+  priceInfo     String?     @db.Text
+  isApproved    Boolean     @default(false)
+  isPremium     Boolean     @default(false)
+  viewCount     Int         @default(0)
+  phoneClickCount Int       @default(0)
+  kakaoClickCount Int       @default(0)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  ownerId String
+  owner   AdUser @relation(fields: [ownerId], references: [id])
+
+  ads       Ad[]
+  events    BizEvent[]
+  bookmarks Bookmark[]
+}
+
+enum BizCategory {
+  HAIR_MAKEUP
+  SURGERY_SKIN
+  FASHION
+  NAIL_BEAUTY
+  TAX_LAW
+  FITNESS
+  REALESTATE
+  ETC
+}
+
+enum PriceTier {
+  A
+  B
+  C
+}
+
+model Ad {
+  id          String   @id @default(cuid())
+  type        AdType
+  bannerImage String?
+  bannerLink  String?
+  startDate   DateTime
+  endDate     DateTime
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id])
+  paymentId  String?  @unique
+  payment    Payment? @relation(fields: [paymentId], references: [id])
+}
+
+enum AdType {
+  BASIC
+  PREMIUM
+  MAIN_BANNER
+  JOB_PAGE_BANNER
+  POPUP
+}
+
+model BizEvent {
+  id          String   @id @default(cuid())
+  title       String
+  description String   @db.Text
+  image       String?
+  startDate   DateTime
+  endDate     DateTime
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+}
+
+// ==========================================
+// 커뮤니티 (여시광장)
+// ==========================================
+model Board {
+  id          String    @id @default(cuid())
+  name        String
+  slug        String    @unique
+  description String?
+  minGrade    UserGrade @default(REGULAR)
+  isPublic    Boolean   @default(false)
+  sortOrder   Int       @default(0)
+  isActive    Boolean   @default(true)
+  posts       Post[]
+}
+
+model Post {
+  id          String   @id @default(cuid())
+  title       String
+  content     String   @db.Text
+  images      String[]
+  isAnonymous Boolean  @default(false)
+  isPinned    Boolean  @default(false)
+  isPopular   Boolean  @default(false)
+  viewCount   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  authorId String
+  author   User @relation(fields: [authorId], references: [id])
+  boardId  String
+  board    Board @relation(fields: [boardId], references: [id])
+
+  comments  Comment[]
+  likes     Like[]
+  bookmarks Bookmark[]
+  reports   Report[]
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  authorId String
+  author   User @relation(fields: [authorId], references: [id])
+  postId   String
+  post     Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  parentId String?
+  parent   Comment?  @relation("Replies", fields: [parentId], references: [id])
+  replies  Comment[] @relation("Replies")
+  likes    Like[]
+}
+
+model Like {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  userId    String
+  user      User @relation(fields: [userId], references: [id])
+  postId    String?
+  post      Post? @relation(fields: [postId], references: [id], onDelete: Cascade)
+  commentId String?
+  comment   Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId])
+  @@unique([userId, commentId])
+}
+
+model Bookmark {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  userId     String
+  user       User @relation(fields: [userId], references: [id])
+  postId     String?
+  post       Post?     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  businessId String?
+  business   Business? @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  jobId      String?
+  job        Job?      @relation(fields: [jobId], references: [id], onDelete: Cascade) // [v6 수정]
+
+  @@unique([userId, postId])
+  @@unique([userId, businessId])
+  @@unique([userId, jobId])
+}
+
+// ==========================================
+// 결제
+// ==========================================
+model Payment {
+  id             String        @id @default(cuid())
+  type           PaymentType
+  amount         Int
+  months         Int           @default(1) // [v6 추가] 선결제 기간
+  status         PaymentStatus @default(PENDING)
+  tossOrderId    String?       @unique
+  tossPaymentKey String?
+  description    String?
+  createdAt      DateTime      @default(now())
+
+  bizUserId  String?
+  bizUser    BizUser? @relation("BizUserPayments", fields: [bizUserId], references: [id]) // [v6 수정]
+  adUserId   String?
+  adUser     AdUser?  @relation("AdUserPayments", fields: [adUserId], references: [id])   // [v6 수정]
+  guestEmail String?
+
+  ad  Ad?
+  job Job?
+}
+
+enum PaymentType {
+  JOB_BASIC
+  JOB_PREMIUM
+  JOB_URGENT
+  JOB_BUMP
+  JOB_PKG_BASIC
+  JOB_PKG_PREMIUM
+  SEEK_ACCESS
+  AD_BASIC
+  AD_PREMIUM
+  AD_MAIN_BANNER
+  AD_JOB_PAGE_BANNER
+  AD_POPUP
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
+  REFUNDED
+}
+
+// ==========================================
+// 신고 & 알림
+// ==========================================
+model Report {
+  id          String       @id @default(cuid())
+  reason      String
+  detail      String?
+  status      ReportStatus @default(PENDING)
+  rewardPoint Int          @default(0)
+  createdAt   DateTime     @default(now())
+
+  reporterId String
+  reporter   User @relation("Reporter", fields: [reporterId], references: [id])
+  postId     String?
+  post       Post? @relation(fields: [postId], references: [id], onDelete: Cascade)
+  jobId      String?
+  job        Job?  @relation(fields: [jobId], references: [id], onDelete: Cascade) // [v6 수정]
+}
+
+enum ReportStatus {
+  PENDING
+  RESOLVED
+  DISMISSED
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  type      String
+  message   String
+  link      String?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  userId String
+  user   User @relation(fields: [userId], references: [id])
+}
+
+// ==========================================
+// 카페 인기글 (관리자 수동 등록)
+// ==========================================
+model CafePost {
+  id        String   @id @default(cuid())
+  title     String
+  url       String
+  category  String   @default("인기글") // 인기글, 최신글, 공지 등
+  isPinned  Boolean  @default(false)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+// ==========================================
+// 비밀번호 재설정 토큰 (업소/광고 회원용)
+// ==========================================
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  email     String
+  token     String   @unique
+  userType  String   // "BIZ" | "AD"
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([email])
+}

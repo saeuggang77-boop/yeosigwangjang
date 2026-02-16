@@ -2,26 +2,102 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #1A1A2E;
+    --surface: #16213E;
+    --foreground: #F5F5F5;
+  }
+
+  body {
+    @apply bg-dark-bg text-[#F5F5F5] antialiased;
+  }
+
+  /* 스크롤바 스타일 */
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-dark-bg;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-dark-border rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-primary;
   }
 }
 
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
-}
+@layer components {
+  /* 카드 기본 스타일 */
+  .card {
+    @apply bg-dark-surface border border-dark-border rounded-xl p-4;
+  }
 
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
+  /* 프리미엄 카드 */
+  .card-premium {
+    @apply card border-premium-border bg-gradient-to-br from-dark-surface to-dark-card shadow-lg shadow-premium-border/10;
+  }
+
+  /* 긴급 카드 */
+  .card-urgent {
+    @apply card border-urgent shadow-lg shadow-urgent/10;
+  }
+
+  /* 무료 카드 */
+  .card-free {
+    @apply card opacity-60 text-sm;
+  }
+
+  /* 버튼 기본 */
+  .btn-primary {
+    @apply bg-primary hover:bg-primary-light text-white font-medium px-4 py-2 rounded-lg transition-colors;
+  }
+
+  .btn-secondary {
+    @apply bg-secondary hover:bg-secondary-light text-dark-bg font-medium px-4 py-2 rounded-lg transition-colors;
+  }
+
+  .btn-accent {
+    @apply bg-accent hover:bg-accent-light text-white font-medium px-4 py-2 rounded-lg transition-colors;
+  }
+
+  .btn-outline {
+    @apply border border-dark-border hover:border-primary text-[#F5F5F5] font-medium px-4 py-2 rounded-lg transition-colors;
+  }
+
+  /* 뱃지 */
+  .badge-premium {
+    @apply inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-premium-gold/20 text-premium-gold;
+  }
+
+  .badge-urgent {
+    @apply inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-urgent/20 text-urgent;
+  }
+
+  .badge-verified {
+    @apply inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-success/20 text-success;
+  }
+
+  /* 블러 처리 (구직글 열람권 미구매) */
+  .blur-content {
+    @apply blur-md select-none pointer-events-none;
+  }
+
+  /* 입력 필드 */
+  .input-field {
+    @apply w-full bg-dark-card border border-dark-border rounded-lg px-4 py-2.5 text-[#F5F5F5] placeholder-gray-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors;
+  }
+
+  /* 스크롤바 숨김 (가로 스크롤 영역) */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
   }
 }
