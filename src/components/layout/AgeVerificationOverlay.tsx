@@ -260,18 +260,16 @@ export default function AgeVerificationOverlay() {
             </div>
           )}
 
-          {/* 개발자 모드 우회 (development only) */}
-          {process.env.NODE_ENV === "development" && (
-            <button
-              onClick={() => {
-                setCookie(COOKIE_NAME, "true", COOKIE_MAX_AGE);
-                setVerified(true);
-              }}
-              className="w-full mt-4 py-2 rounded-lg text-xs text-yellow-500 border border-yellow-500/30 hover:bg-yellow-500/10 transition-colors"
-            >
-              [DEV] 성인인증 우회
-            </button>
-          )}
+          {/* 성인인증 우회 (테스트용 — 배포 전 반드시 제거할 것) */}
+          <button
+            onClick={() => {
+              setCookie(COOKIE_NAME, "true", COOKIE_MAX_AGE);
+              setVerified(true);
+            }}
+            className="w-full mt-4 py-2 rounded-lg text-xs text-yellow-500 border border-yellow-500/30 hover:bg-yellow-500/10 transition-colors"
+          >
+            [TEST] 성인인증 우회
+          </button>
 
           {/* 나가기 */}
           <button
