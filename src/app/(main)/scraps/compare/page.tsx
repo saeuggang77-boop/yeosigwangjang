@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 
@@ -89,6 +89,14 @@ function formatCell(job: CompareJob, key: string): React.ReactNode {
 }
 
 export default function ComparePage() {
+  return (
+    <Suspense fallback={<div className="max-w-5xl mx-auto px-4 py-10 text-center text-gray-400">로딩 중...</div>}>
+      <CompareContent />
+    </Suspense>
+  );
+}
+
+function CompareContent() {
   const searchParams = useSearchParams();
   const [jobs, setJobs] = useState<CompareJob[]>([]);
   const [isLoading, setIsLoading] = useState(true);

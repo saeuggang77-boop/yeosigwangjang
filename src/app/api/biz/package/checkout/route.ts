@@ -67,7 +67,6 @@ export async function POST(req: NextRequest) {
       region,
       bizType,
       salary,
-      workHours,
       description,
       contact,
       agreeNoFraud,
